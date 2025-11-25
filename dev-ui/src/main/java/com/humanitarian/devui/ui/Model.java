@@ -91,6 +91,30 @@ public class Model {
         }
     }
 
+    public void updateComment(Comment updatedComment) {
+        for (Post post : posts) {
+            for (Comment comment : post.getComments()) {
+                if (comment.getCommentId().equals(updatedComment.getCommentId())) {
+                    post.updateComment(updatedComment);
+                    notifyListeners();
+                    return;
+                }
+            }
+        }
+    }
+
+    public void removeComment(String commentId) {
+        for (Post post : posts) {
+            for (Comment comment : post.getComments()) {
+                if (comment.getCommentId().equals(commentId)) {
+                    post.removeComment(commentId);
+                    notifyListeners();
+                    return;
+                }
+            }
+        }
+    }
+
     public Map<String, Object> performAnalysis(String moduleName) {
         AnalysisModule module = analysisModules.get(moduleName);
         if (module == null) {

@@ -134,6 +134,10 @@ public class CommentManagementPanel extends JPanel {
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 5, 5));
 
+        JButton saveButton = new JButton("💾 Save All");
+        saveButton.addActionListener(e -> saveAllComments());
+        buttonPanel.add(saveButton);
+
         JButton deleteButton = new JButton("🗑️ Delete");
         deleteButton.addActionListener(e -> deleteSelectedComment());
         buttonPanel.add(deleteButton);
@@ -244,12 +248,16 @@ public class CommentManagementPanel extends JPanel {
                 JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
+                    // Remove from model
+                    model.removeComment(commentToDelete.getCommentId());
+                    
+                    // Remove from database
                     if (dbManager != null) {
                         dbManager.deleteComment(commentToDelete.getCommentId());
-                        refreshTable();
-                        detailsArea.setText("");
-                        statusLabel.setText("✓ Comment deleted and saved to database");
                     }
+                    refreshTable();
+                    detailsArea.setText("");
+                    statusLabel.setText("✓ Comment deleted and saved to database");
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(this, "Error deleting comment: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -361,6 +369,29 @@ public class CommentManagementPanel extends JPanel {
 
         dialog.add(panel);
         dialog.setVisible(true);
+    }
+
+    private void saveAllComments() {
+        try {
+            if (dbManager == null) {
+                JOptionPane.showMessageDialog(this, "Database not initialized", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Save all posts and their comments to database
+            int savedCount = 0;
+            for (Post post : model.getPosts()) {
+                dbManager.savePost(post);
+                savedCount += post.getComments().size();
+            }
+
+            statusLabel.setText("✓ Saved " + savedCount + " comments to database");
+            JOptionPane.showMessageDialog(this, "✓ All comments saved successfully!\nTotal: " + savedCount + " comments", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error saving comments: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            System.err.println("Error saving comments: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
 }
