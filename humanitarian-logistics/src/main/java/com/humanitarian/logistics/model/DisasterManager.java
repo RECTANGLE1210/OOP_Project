@@ -32,41 +32,37 @@ public class DisasterManager {
      * Initialize with default disaster types
      */
     private void initializeDefaultDisasters() {
-        // Yagi (Typhoon)
+        // Yagi
         DisasterType yagi = new DisasterType("yagi");
         yagi.addAlias("#yagi");
         yagi.addAlias("yagi");
-        yagi.addAlias("typhoon");
-        yagi.addAlias("#typhoon");
         addDisasterType(yagi);
 
-        // Matmo (Typhoon)
+        // Matmo
         DisasterType matmo = new DisasterType("matmo");
         matmo.addAlias("#matmo");
         matmo.addAlias("matmo");
         addDisasterType(matmo);
 
-        // Flood
-        DisasterType flood = new DisasterType("flood");
-        flood.addAlias("#bualoi");
-        flood.addAlias("bualoi");
-        flood.addAlias("flood");
-        flood.addAlias("#flood");
-        addDisasterType(flood);
+        // Bualo
+        DisasterType bualo = new DisasterType("bualo");
+        bualo.addAlias("#bualo");
+        bualo.addAlias("bualo");
+        addDisasterType(bualo);
 
-        // Disaster/General
-        DisasterType disaster = new DisasterType("disaster");
-        disaster.addAlias("disaster");
-        disaster.addAlias("#disaster");
-        addDisasterType(disaster);
+        // Koto
+        DisasterType koto = new DisasterType("koto");
+        koto.addAlias("#koto");
+        koto.addAlias("koto");
+        addDisasterType(koto);
 
-        // Aid/Relief
-        DisasterType aid = new DisasterType("aid");
-        aid.addAlias("aid");
-        aid.addAlias("#aid");
-        aid.addAlias("relief");
-        aid.addAlias("#relief");
-        addDisasterType(aid);
+        // FUNG-WONG
+        DisasterType fungwong = new DisasterType("FUNG-WONG");
+        fungwong.addAlias("#FUNG-WONG");
+        fungwong.addAlias("FUNG-WONG");
+        fungwong.addAlias("#fung-wong");
+        fungwong.addAlias("fung-wong");
+        addDisasterType(fungwong);
     }
 
     /**
