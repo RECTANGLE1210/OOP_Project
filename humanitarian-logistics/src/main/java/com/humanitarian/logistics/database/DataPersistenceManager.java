@@ -9,11 +9,10 @@ import java.util.*;
  * Saves/loads data to/from local cache files.
  */
 public class DataPersistenceManager {
-    private static final String DATA_DIR = getDataDir();
-    private static final String POSTS_FILE = DATA_DIR + "/posts.dat";
-    private static final String DISASTERS_FILE = DATA_DIR + "/disasters.dat";
+    private String postsFile;
+    private String disastersFile;
     
-    private static String getDataDir() {
+    private String getDataDir() {
         // Get current working directory and find the data folder
         String currentDir = new File(".").getAbsolutePath();
         File dataDir;
@@ -33,6 +32,9 @@ public class DataPersistenceManager {
     }
 
     public DataPersistenceManager() {
+        String dataDir = getDataDir();
+        this.postsFile = dataDir + "/posts.dat";
+        this.disastersFile = dataDir + "/disasters.dat";
         // Data directory is already created in getDataDir() static method
     }
 
@@ -40,7 +42,7 @@ public class DataPersistenceManager {
      * Save posts to persistent storage
      */
     public void savePosts(List<Post> posts) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(POSTS_FILE))) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(this.postsFile))) {
             oos.writeObject(new ArrayList<>(posts));
             System.out.println("✓ Posts saved: " + posts.size() + " items");
         } catch (IOException e) {
@@ -53,12 +55,12 @@ public class DataPersistenceManager {
      */
     @SuppressWarnings("unchecked")
     public List<Post> loadPosts() {
-        File file = new File(POSTS_FILE);
+        File file = new File(this.postsFile);
         if (!file.exists()) {
             return new ArrayList<>();
         }
 
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(POSTS_FILE))) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(this.postsFile))) {
             List<Post> posts = (List<Post>) ois.readObject();
             System.out.println("✓ Posts loaded: " + posts.size() + " items");
             return posts;
@@ -72,7 +74,7 @@ public class DataPersistenceManager {
      * Save disaster types to persistent storage
      */
     public void saveDisasters(DisasterManager manager) {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(DISASTERS_FILE))) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(this.disastersFile))) {
             // Save all non-default disaster types
             Set<String> defaultDisasters = new HashSet<>(Arrays.asList(
                 "yagi", "matmo", "bualo", "koto", "fung-wong"
@@ -97,12 +99,12 @@ public class DataPersistenceManager {
      */
     @SuppressWarnings("unchecked")
     public void loadDisasters(DisasterManager manager) {
-        File file = new File(DISASTERS_FILE);
+        File file = new File(this.disastersFile);
         if (!file.exists()) {
             return;
         }
 
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(DISASTERS_FILE))) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(this.disastersFile))) {
             Map<String, DisasterType> customDisasters = (Map<String, DisasterType>) ois.readObject();
             for (DisasterType disaster : customDisasters.values()) {
                 manager.addDisasterType(disaster);
@@ -117,14 +119,14 @@ public class DataPersistenceManager {
      * Clear all persistent data
      */
     public void clearAllData() {
-        File postsFile = new File(POSTS_FILE);
-        File disastersFile = new File(DISASTERS_FILE);
+        File postsFileObj = new File(this.postsFile);
+        File disastersFileObj = new File(this.disastersFile);
         
-        if (postsFile.exists()) {
-            postsFile.delete();
+        if (postsFileObj.exists()) {
+            postsFileObj.delete();
         }
-        if (disastersFile.exists()) {
-            disastersFile.delete();
+        if (disastersFileObj.exists()) {
+            disastersFileObj.delete();
         }
         
         System.out.println("✓ All persistent data cleared");
@@ -134,13 +136,13 @@ public class DataPersistenceManager {
      * Check if saved data exists
      */
     public boolean hasSavedData() {
-        return new File(POSTS_FILE).exists();
+        return new File(this.postsFile).exists();
     }
 
     /**
      * Get data directory path
      */
     public String getDataDirectory() {
-        return DATA_DIR;
+        return getDataDir();
     }
 }

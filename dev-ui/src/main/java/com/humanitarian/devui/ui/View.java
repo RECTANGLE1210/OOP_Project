@@ -210,13 +210,23 @@ public class View extends JFrame implements ModelListener {
                     }
                 }
 
-                // Save comments
+                // Save comments from buffer AND from posts
                 for (Comment comment : dataBuffer.getPendingComments()) {
                     dbManager.saveComment(comment);
                 }
                 
+                // Also save comments attached to posts
+                for (Post post : dataBuffer.getPendingPosts()) {
+                    for (Comment comment : post.getComments()) {
+                        dbManager.saveComment(comment);
+                    }
+                }
+                
+                System.out.println("DEBUG: About to commit...");
                 dbManager.commit();
+                System.out.println("DEBUG: Commit done");
                 dbManager.close();
+                System.out.println("DEBUG: Close done");
 
                 dataBuffer.clear();
                 
@@ -224,6 +234,7 @@ public class View extends JFrame implements ModelListener {
                 try {
                     DatabaseManager reloadDb = new DatabaseManager();
                     List<Post> savedPosts = reloadDb.getAllPosts();
+                    System.out.println("DEBUG: Reloaded " + savedPosts.size() + " posts");
                     for (Post post : savedPosts) {
                         model.addPost(post);
                     }
@@ -241,6 +252,7 @@ public class View extends JFrame implements ModelListener {
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error saving to database: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 statusLabel.setText("✗ Error saving data: " + ex.getMessage());
+                ex.printStackTrace();
             }
         }
     }

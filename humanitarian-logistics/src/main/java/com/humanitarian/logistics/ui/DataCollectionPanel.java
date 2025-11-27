@@ -319,7 +319,7 @@ public class DataCollectionPanel extends JPanel {
         }
         
         try {
-            // Get disaster types before loading new data
+            // Get current disaster types before loading new data
             java.util.Set<String> userDisasters = new java.util.HashSet<>(
                 DisasterManager.getInstance().getAllDisasterNames()
             );
@@ -328,19 +328,26 @@ public class DataCollectionPanel extends JPanel {
             DatabaseLoader.loadOurDatabase(model);
             
             // Auto-detect and add missing disaster types from loaded data
+            // Check disaster_keyword field from posts
             java.util.Set<String> missingDisasters = new java.util.HashSet<>();
+            
             for (Post post : model.getPosts()) {
-                if (post instanceof FacebookPost) {
-                    FacebookPost fbPost = (FacebookPost) post;
-                    String pageId = fbPost.getPageId();
+                // Get disaster keyword from post
+                String disasterKeyword = post.getDisasterKeyword();
+                if (disasterKeyword != null && !disasterKeyword.isEmpty()) {
+                    String normalizedDisaster = DisasterType.normalize(disasterKeyword);
                     
-                    // Extract disaster name from PAGE_xxx format
-                    if (pageId.startsWith("PAGE_")) {
-                        String disasterName = pageId.substring(5);
-                        if (!userDisasters.contains(disasterName)) {
-                            missingDisasters.add(disasterName);
-                        }
+                    // Check if user already has this disaster type
+                    if (!userDisasters.contains(normalizedDisaster) && 
+                        !missingDisasters.contains(normalizedDisaster)) {
+                        missingDisasters.add(normalizedDisaster);
                     }
+                }
+                
+                // Also check comments for disaster keywords
+                for (Comment comment : post.getComments()) {
+                    checkAndCollectMissingDisasters(comment.getContent().toLowerCase(), 
+                        userDisasters, missingDisasters);
                 }
             }
             
@@ -397,4 +404,27 @@ public class DataCollectionPanel extends JPanel {
             disasterTypeCombo.addItem("matmo");
         }
     }
+
+    /**
+     * Check content for disaster keywords and collect missing disaster types
+     */
+    private void checkAndCollectMissingDisasters(String content, 
+                                                   java.util.Set<String> userDisasters, 
+                                                   java.util.Set<String> missingDisasters) {
+        DisasterManager disasterManager = DisasterManager.getInstance();
+        
+        // Check all known disaster types to see if any match the content
+        for (DisasterType disaster : disasterManager.getAllDisasterTypes()) {
+            String disasterName = disaster.getName();
+            
+            // Check if any alias of this disaster appears in the content
+            if (disaster.getAliases().stream().anyMatch(content::contains)) {
+                // This disaster type is mentioned in content
+                if (!userDisasters.contains(disasterName)) {
+                    missingDisasters.add(disasterName);
+                }
+            }
+        }
+    }
 }
+

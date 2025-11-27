@@ -4,6 +4,7 @@ import com.humanitarian.logistics.model.*;
 import com.humanitarian.logistics.ui.Model;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.io.File;
 
 /**
  * Utility class to load data from dev-ui's curated database.
@@ -11,9 +12,23 @@ import java.time.LocalDateTime;
  */
 public class DatabaseLoader {
     
-    // Dev-UI's curated database file - use relative path from project root
-    // The database is located at: ../dev-ui/humanitarian_logistics_curated.db
-    private static final String DEV_UI_DB_URL = "jdbc:sqlite:../dev-ui/humanitarian_logistics_curated.db";
+    // Method to get dev-ui database path - computed every time to pick up new files
+    private static String getDevUIDbPath() {
+        String currentDir = System.getProperty("user.dir");
+        String dbPath;
+        
+        // Always resolve to absolute path from OOP_Project root
+        if (currentDir.endsWith("humanitarian-logistics")) {
+            // If running from humanitarian-logistics dir, go up to root then to dev-ui
+            File rootDir = new File(currentDir).getParentFile();
+            dbPath = rootDir.getAbsolutePath() + "/dev-ui/data/humanitarian_logistics_curated.db";
+        } else {
+            // If running from OOP_Project root
+            dbPath = currentDir + "/dev-ui/data/humanitarian_logistics_curated.db";
+        }
+        
+        return dbPath;
+    }
     
     public static void loadOurDatabase(Model model) {
         if (model == null) {
@@ -21,12 +36,74 @@ public class DatabaseLoader {
         }
         model.getPosts().clear();
         loadFromDevUIDatabase(model);
+        
+        // Save loaded data to user database to ensure persistence
+        saveLoadedDataToUserDatabase(model);
+    }
+    
+    private static void saveLoadedDataToUserDatabase(Model model) {
+        DatabaseManager dbManager = null;
+        try {
+            // Get the proper database directory
+            String currentDir = System.getProperty("user.dir");
+            String basePath;
+            
+            if (currentDir.endsWith("humanitarian-logistics")) {
+                basePath = currentDir + "/data";
+            } else {
+                basePath = currentDir + "/humanitarian-logistics/data";
+            }
+            
+            // Delete old user database file and connections to reset it
+            String dbFilePath = basePath + "/humanitarian_logistics_user.db";
+            java.io.File userDbFile = new java.io.File(dbFilePath);
+            if (userDbFile.exists()) {
+                userDbFile.delete();
+                // Also delete journal file if exists
+                java.io.File journalFile = new java.io.File(dbFilePath + "-journal");
+                if (journalFile.exists()) {
+                    journalFile.delete();
+                }
+                java.io.File shmFile = new java.io.File(dbFilePath + "-shm");
+                if (shmFile.exists()) {
+                    shmFile.delete();
+                }
+                java.io.File walFile = new java.io.File(dbFilePath + "-wal");
+                if (walFile.exists()) {
+                    walFile.delete();
+                }
+                Thread.sleep(200); // Wait for file system to fully release
+            }
+            
+            System.out.println("DEBUG: Creating fresh DatabaseManager for user database...");
+            // Create new DatabaseManager (will create fresh database)
+            dbManager = new DatabaseManager();
+            System.out.println("DEBUG: DatabaseManager created, now saving " + model.getPosts().size() + " posts");
+            
+            // Save all loaded posts and their comments
+            for (Post post : model.getPosts()) {
+                System.out.println("DEBUG: Saving post " + post.getPostId() + " with " + post.getComments().size() + " comments");
+                dbManager.savePost(post);
+            }
+            dbManager.commit();
+            System.out.println("✓ Data saved to user database (humanitarian_logistics_user.db)");
+        } catch (Exception e) {
+            System.err.println("Error saving to user database: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            if (dbManager != null) {
+                dbManager.close();
+            }
+        }
     }
     
     private static void loadFromDevUIDatabase(Model model) {
         try {
             Class.forName("org.sqlite.JDBC");
-            try (Connection connection = DriverManager.getConnection(DEV_UI_DB_URL)) {
+            String dbPath = getDevUIDbPath();
+            String dbUrl = "jdbc:sqlite:" + dbPath;
+            System.out.println("DEBUG: Connecting to: " + dbUrl);
+            try (Connection connection = DriverManager.getConnection(dbUrl)) {
                 loadPostsFromDevUI(connection, model);
                 loadCommentsFromDevUI(connection, model);
                 int postCount = model.getPosts().size();

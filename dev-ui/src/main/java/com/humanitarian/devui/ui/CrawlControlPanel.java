@@ -756,9 +756,23 @@ public class CrawlControlPanel extends JPanel {
                 model.clearPosts();
                 buffer.clear();
                 
-                // Get the dev-ui database path
-                File dbFile = new File("humanitarian_logistics_curated.db");
-                String dbPath = dbFile.getAbsolutePath();
+                // Get the correct database path based on working directory
+                String currentDir = System.getProperty("user.dir");
+                String basePath;
+                
+                if (currentDir.endsWith("dev-ui")) {
+                    basePath = currentDir + "/data";
+                } else {
+                    basePath = currentDir + "/dev-ui/data";
+                }
+                
+                File dir = new File(basePath);
+                if (!dir.exists()) {
+                    dir.mkdirs();
+                }
+                
+                String dbPath = basePath + "/humanitarian_logistics_curated.db";
+                File dbFile = new File(dbPath);
                 
                 System.out.println("Resetting database at: " + dbPath);
                 
@@ -793,25 +807,28 @@ public class CrawlControlPanel extends JPanel {
                         
                         System.out.println("Creating new database schema...");
                         
-                        // Create posts table
+                        // Create posts table with new schema (9 columns)
                         stmt.execute("CREATE TABLE IF NOT EXISTS posts (" +
-                            "post_id INTEGER PRIMARY KEY, " +
-                            "title TEXT NOT NULL, " +
-                            "content TEXT NOT NULL, " +
+                            "post_id TEXT PRIMARY KEY, " +
+                            "content TEXT, " +
                             "author TEXT, " +
-                            "posted_at TEXT, " +
-                            "source TEXT" +
+                            "source TEXT, " +
+                            "created_at TEXT, " +
+                            "sentiment TEXT, " +
+                            "confidence REAL, " +
+                            "relief_category TEXT, " +
+                            "disaster_keyword TEXT" +
                             ")");
                         
-                        // Create comments table with foreign key
+                        // Create comments table with new schema
                         stmt.execute("CREATE TABLE IF NOT EXISTS comments (" +
-                            "comment_id INTEGER PRIMARY KEY, " +
-                            "post_id INTEGER NOT NULL, " +
-                            "content TEXT NOT NULL, " +
+                            "comment_id TEXT PRIMARY KEY, " +
+                            "post_id TEXT NOT NULL, " +
+                            "content TEXT, " +
                             "author TEXT, " +
                             "created_at TEXT, " +
-                            "sentiment_type TEXT, " +
-                            "sentiment_confidence REAL, " +
+                            "sentiment TEXT, " +
+                            "confidence REAL, " +
                             "relief_category TEXT, " +
                             "FOREIGN KEY(post_id) REFERENCES posts(post_id) ON DELETE CASCADE" +
                             ")");

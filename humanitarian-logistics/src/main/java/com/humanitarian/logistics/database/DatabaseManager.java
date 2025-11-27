@@ -9,25 +9,67 @@ import java.util.*;
  * Demonstrates abstraction and encapsulation of database operations.
  */
 public class DatabaseManager {
-    private static final String DB_URL = "jdbc:sqlite:humanitarian_logistics_user.db";
+    private String dbUrl;
     private Connection connection;
+    private boolean initialized = false;
 
     public DatabaseManager() {
-        initializeDatabase();
+        // Lazy initialization - only connect when needed
     }
 
-    private void initializeDatabase() {
-        try {
+    private String getDbUrl() {
+        String currentDir = System.getProperty("user.dir");
+        String basePath;
+        
+        // Detect if running from OOP_Project root or from within humanitarian-logistics
+        if (currentDir.endsWith("humanitarian-logistics")) {
+            basePath = currentDir + "/data";
+        } else {
+            basePath = currentDir + "/humanitarian-logistics/data";
+        }
+        
+        java.io.File dir = new java.io.File(basePath);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        
+        String dbPath = basePath + "/humanitarian_logistics_user.db";
+        System.out.println("DEBUG: DatabaseManager path = " + dbPath);
+        return "jdbc:sqlite:" + dbPath;
+    }
+
+    private void ensureConnection() throws ClassNotFoundException, SQLException {
+        if (!initialized) {
             Class.forName("org.sqlite.JDBC");
-            connection = DriverManager.getConnection(DB_URL);
+            dbUrl = getDbUrl();
+            
+            // Close any previous connection
+            if (connection != null && !connection.isClosed()) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    // Ignore
+                }
+            }
+            
+            connection = DriverManager.getConnection(dbUrl);
+            // Enable foreign keys
+            try (Statement stmt = connection.createStatement()) {
+                stmt.execute("PRAGMA foreign_keys = ON");
+            }
             createTables();
-            System.out.println("Database initialized");
-        } catch (ClassNotFoundException | SQLException e) {
-            System.err.println("Database error: " + e.getMessage());
+            System.out.println("Database initialized: " + dbUrl);
+            initialized = true;
         }
     }
 
     private void createTables() throws SQLException {
+        // First drop old tables if they have wrong schema
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute("DROP TABLE IF EXISTS posts_old");
+            stmt.execute("DROP TABLE IF EXISTS comments_old");
+        }
+        
         String postsTable = "CREATE TABLE IF NOT EXISTS posts (" +
                 "post_id TEXT PRIMARY KEY," +
                 "content TEXT," +
@@ -53,10 +95,12 @@ public class DatabaseManager {
         try (Statement stmt = connection.createStatement()) {
             stmt.execute(postsTable);
             stmt.execute(commentsTable);
+            System.out.println("DEBUG: Tables created/verified");
         }
     }
 
-    public void savePost(Post post) throws SQLException {
+    public void savePost(Post post) throws SQLException, ClassNotFoundException {
+        ensureConnection();
         String sql = "INSERT OR REPLACE INTO posts VALUES(?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, post.getPostId());
@@ -77,7 +121,8 @@ public class DatabaseManager {
         }
     }
 
-    public void saveComment(Comment comment) throws SQLException {
+    public void saveComment(Comment comment) throws SQLException, ClassNotFoundException {
+        ensureConnection();
         String sql = "INSERT OR REPLACE INTO comments VALUES(?,?,?,?,?,?,?,?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, comment.getCommentId());
@@ -92,7 +137,8 @@ public class DatabaseManager {
         }
     }
 
-    public List<Post> getAllPosts() throws SQLException {
+    public List<Post> getAllPosts() throws SQLException, ClassNotFoundException {
+        ensureConnection();
         List<Post> posts = new ArrayList<>();
         String sql = "SELECT * FROM posts";
         try (Statement stmt = connection.createStatement();
@@ -105,7 +151,8 @@ public class DatabaseManager {
         return posts;
     }
 
-    public void deleteComment(String commentId) throws SQLException {
+    public void deleteComment(String commentId) throws SQLException, ClassNotFoundException {
+        ensureConnection();
         String sql = "DELETE FROM comments WHERE comment_id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, commentId);
@@ -114,7 +161,8 @@ public class DatabaseManager {
         }
     }
 
-    public void updateComment(Comment comment) throws SQLException {
+    public void updateComment(Comment comment) throws SQLException, ClassNotFoundException {
+        ensureConnection();
         String sql = "UPDATE comments SET content = ?, sentiment = ?, confidence = ?, relief_category = ? WHERE comment_id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, comment.getContent());
@@ -154,7 +202,8 @@ public class DatabaseManager {
         return post;
     }
 
-    public void clearAllComments() throws SQLException {
+    public void clearAllComments() throws SQLException, ClassNotFoundException {
+        ensureConnection();
         String sql = "DELETE FROM comments";
         try (Statement stmt = connection.createStatement()) {
             stmt.executeUpdate(sql);
@@ -163,8 +212,17 @@ public class DatabaseManager {
     }
 
     public void commit() throws SQLException {
-        if (connection != null && !connection.getAutoCommit()) {
-            connection.commit();
+        if (connection != null && !connection.isClosed()) {
+            try {
+                if (!connection.getAutoCommit()) {
+                    connection.commit();
+                }
+            } catch (SQLException e) {
+                // Ignore - connection might be in autocommit mode
+                if (!e.getMessage().contains("auto-commit")) {
+                    throw e;
+                }
+            }
         }
     }
 

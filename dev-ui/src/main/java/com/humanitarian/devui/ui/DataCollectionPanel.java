@@ -226,12 +226,9 @@ public class DataCollectionPanel extends JPanel {
                 post.setDisasterType(disaster);
             }
 
-            // Add post to model (auto-saves to database)
-            model.addPost(post);
-
             int commentCount = 0;
 
-            // Parse and save comments
+            // Parse and add comments BEFORE adding post to model
             if (!commentsText.isEmpty()) {
                 String[] commentLines = commentsText.split("\n");
                 for (String line : commentLines) {
@@ -262,6 +259,9 @@ public class DataCollectionPanel extends JPanel {
                     }
                 }
             }
+
+            // NOW add post to model with all comments already attached
+            model.addPost(post);
 
             // Show success message
             String message = String.format(
