@@ -273,16 +273,16 @@ public class CrawlControlPanel extends JPanel {
                 try {
                     if ("YOUTUBE".equals(selectedPlatform)) {
                         crawlResultsArea.append("Initializing YouTube Selenium crawler...\n");
-                        YouTubeCrawler facebookCrawler = new YouTubeCrawler();
-                        facebookCrawler.initialize();
+                        YouTubeCrawler youtubeCrawler = new YouTubeCrawler();
+                        youtubeCrawler.initialize();
                         
-                        if (facebookCrawler.isInitialized()) {
-                            crawlResultsArea.append("✓ Facebook crawler initialized\n");
-                            crawlResultsArea.append("Crawling from Facebook...\n\n");
-                            posts = facebookCrawler.crawlPosts(hashtags, new ArrayList<>(), postLimit);
+                        if (youtubeCrawler.isInitialized()) {
+                            crawlResultsArea.append("✓ Crawler initialized\n");
+                            crawlResultsArea.append("Crawling...\n\n");
+                            posts = youtubeCrawler.crawlPosts(hashtags, new ArrayList<>(), postLimit);
                             usedRealCrawler = true;
-                            crawlResultsArea.append("✓ Successfully crawled " + posts.size() + " posts from Facebook\n\n");
-                            crawler = facebookCrawler;
+                            crawlResultsArea.append("✓ Successfully crawled " + posts.size() + " posts from YouTube\n\n");
+                            crawler = youtubeCrawler;
                         }
                     } else {
                         // YouTube
@@ -480,10 +480,10 @@ public class CrawlControlPanel extends JPanel {
                             youtubeCrawler.shutdown();
                         } else {
                             // Use YouTubeCrawler for YouTube URLs
-                            YouTubeCrawler facebookCrawler = new YouTubeCrawler();
-                            facebookCrawler.initialize();
-                            post = facebookCrawler.crawlVideoByUrl(postUrl);
-                            facebookCrawler.shutdown();
+                            YouTubeCrawler youtubeCrawler = new YouTubeCrawler();
+                            youtubeCrawler.initialize();
+                            post = youtubeCrawler.crawlVideoByUrl(postUrl);
+                            youtubeCrawler.shutdown();
                         }
                         
                         if (post != null) {

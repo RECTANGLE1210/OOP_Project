@@ -4,6 +4,8 @@ import com.humanitarian.logistics.model.*;
 import com.humanitarian.logistics.sentiment.EnhancedSentimentAnalyzer;
 import com.humanitarian.logistics.sentiment.SentimentAnalyzer;
 
+import net.bytebuddy.asm.MemberSubstitution.Substitution.Chain.Step.ForField.Write;
+
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -99,7 +101,50 @@ public class YouTubeCrawler implements DataCrawler {
         }
         
         System.out.println("\n🎬 Crawling YouTube for keyword: " + keyword);
-        // TODO: Implement video search
+        try {
+            String searchUrl = "https://www.youtube.com/results?search_query=" 
+                                + java.net.URLEncoder.encode(keyword, "UTF-8");
+
+            System.out.println("🔎 Searching YouTube: " + searchUrl);
+
+            // Fetch HTML
+            String html = fetchPageContent(searchUrl);
+
+            // Regex for extracting videoId fields inside initialData
+            Pattern videoIdPattern = Pattern.compile("\"videoId\":\"([A-Za-z0-9_-]{11})\"");
+            Matcher matcher = videoIdPattern.matcher(html);
+
+            Set<String> videoIds = new LinkedHashSet<>(); // maintain order + avoid duplicates
+
+            while (matcher.find() && videoIds.size() < limit) {
+                videoIds.add(matcher.group(1));
+            }
+
+            if (videoIds.isEmpty()) {
+                System.out.println("⚠️ No videos found for keyword: " + keyword);
+                return posts;
+            }
+
+            System.out.println("📌 Found " + videoIds.size() + " video IDs for keyword: " + keyword);
+
+            // Convert video IDs into Post objects by crawling each video
+            for (String vid : videoIds) {
+                if (posts.size() >= limit) break;
+
+                String videoUrl = "https://www.youtube.com/watch?v=" + vid;
+                System.out.println("➡️ Crawling video: " + videoUrl);
+
+                YouTubePost ytPost = crawlVideoByUrl(videoUrl);
+                if (ytPost != null) {
+                    posts.add(ytPost);
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println("❌ Error during keyword search: " + e.getMessage());
+            e.printStackTrace();
+        }
+
         
         return posts;
     }
