@@ -72,6 +72,14 @@ public class PythonCategoryClassifier {
                     String category = jsonResponse.get("category").getAsString();
                     double confidence = jsonResponse.get("confidence").getAsDouble();
                     
+                    // Validate that category is one of the allowed 5 categories
+                    try {
+                        ReliefItem.Category.valueOf(category);
+                    } catch (IllegalArgumentException e) {
+                        LOGGER.log(Level.WARNING, "Invalid category '" + category + "' received from API. Using FOOD fallback.");
+                        return ReliefItem.Category.FOOD;
+                    }
+                    
                     LOGGER.info("✓ Category classified via Python API: " + category + 
                                " (confidence: " + String.format("%.2f%%", confidence * 100) + ")");
                     LOGGER.info("  Model: " + jsonResponse.get("model").getAsString());
