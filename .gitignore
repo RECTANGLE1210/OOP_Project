@@ -54,7 +54,8 @@ Thumbs.db
 *.temp
 
 # Documentation (exclude README files)
-*.md
+ONE_COMMAND_STARTUP.md
+INTEGRATED_RUN_GUIDE.md
 !README.md
 !README_*.md
 .tmp/

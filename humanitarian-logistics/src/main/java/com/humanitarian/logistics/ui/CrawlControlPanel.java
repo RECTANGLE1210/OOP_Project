@@ -1,8 +1,7 @@
 package com.humanitarian.logistics.ui;
 
 import com.humanitarian.logistics.model.*;
-import com.humanitarian.logistics.crawler.YouTubeCrawler;
-import com.humanitarian.logistics.crawler.MockDataCrawler;
+import com.humanitarian.logistics.crawler.*;
 import com.humanitarian.logistics.database.DatabaseManager;
 import javax.swing.*;
 import java.awt.*;
@@ -10,12 +9,19 @@ import java.io.File;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
- * Panel for controlling data crawling from YouTube.
- * Allows users to configure crawler settings and fetch data.
+ * Panel for controlling data crawling from multiple platforms.
+ * Dynamically loads crawlers from CrawlerRegistry - no hardcoding needed!
+ * 
+ * To add a new crawler:
+ * 1. Create a class that implements DataCrawler
+ * 2. Register it in CrawlerManager.initializeCrawlers()
+ * 3. That's it! UI automatically adapts to new crawlers
  */
 public class CrawlControlPanel extends JPanel {
+    private static final Logger LOGGER = Logger.getLogger(CrawlControlPanel.class.getName());
     private final Model model;
     private JSpinner postLimitSpinner;
     private JSpinner commentLimitSpinner;
@@ -28,16 +34,22 @@ public class CrawlControlPanel extends JPanel {
     private JButton crawlUrlButton;
     private JComboBox<String> disasterTypeCombo;
     private JButton addNewDisasterButton;
-    private String selectedPlatform = "YOUTUBE";
+    private JComboBox<String> platformSelector;
+    private String selectedCrawlerName = "YOUTUBE";
+    private CrawlerRegistry crawlerRegistry = CrawlerRegistry.getInstance();
 
     public CrawlControlPanel(Model model) {
         this.model = model;
+        // Initialize crawler registry if not already done
+        if (crawlerRegistry.getCrawlerNames().isEmpty()) {
+            CrawlerManager.initializeCrawlers();
+        }
         initializeUI();
     }
 
     private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createTitledBorder("Web Crawler Control - Crawl YouTube Videos"));
+        setBorder(BorderFactory.createTitledBorder("Web Crawler Control"));
 
         // Top: Platform selector
         JPanel platformPanel = createPlatformSelectorPanel();
@@ -58,17 +70,71 @@ public class CrawlControlPanel extends JPanel {
 
     private JPanel createPlatformSelectorPanel() {
         JPanel panel = new JPanel();
-        panel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
-        panel.add(new JLabel("Platform:"));
-        JComboBox<String> platformSelector = new JComboBox<>(new String[]{"YOUTUBE"});
+        panel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        panel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        panel.setBackground(new Color(240, 240, 240));
+        
+        JLabel platformLabel = new JLabel("Data Source: ");
+        platformLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(platformLabel);
+        
+        // Dynamically populate crawlers from registry
+        String[] crawlerNames = crawlerRegistry.getCrawlerDisplayNames().toArray(new String[0]);
+        platformSelector = new JComboBox<>(crawlerNames);
         platformSelector.setFont(new Font("Arial", Font.PLAIN, 12));
-        platformSelector.addActionListener(e -> selectedPlatform = (String) platformSelector.getSelectedItem());
+        platformSelector.addActionListener(e -> updateUIForCrawler());
+        platformSelector.setPreferredSize(new Dimension(200, 30));
         panel.add(platformSelector);
-        selectedPlatform = "YOUTUBE";
-
+        
+        // Add crawler description tooltip
+        JLabel descriptionLabel = new JLabel();
+        descriptionLabel.setFont(new Font("Arial", Font.ITALIC, 10));
+        descriptionLabel.setForeground(Color.GRAY);
+        updateCrawlerDescription(descriptionLabel);
+        platformSelector.addActionListener(e -> updateCrawlerDescription(descriptionLabel));
+        panel.add(descriptionLabel);
+        
         return panel;
+    }
+
+    private void updateCrawlerDescription(JLabel descriptionLabel) {
+        String displayName = (String) platformSelector.getSelectedItem();
+        String crawlerName = getCrawlerNameByDisplay(displayName);
+        String description = crawlerRegistry.getDescription(crawlerName);
+        descriptionLabel.setText("  (" + description + ")");
+    }
+
+    private void updateUIForCrawler() {
+        String displayName = (String) platformSelector.getSelectedItem();
+        selectedCrawlerName = getCrawlerNameByDisplay(displayName);
+        
+        CrawlerRegistry.CrawlerConfig config = crawlerRegistry.getConfig(selectedCrawlerName);
+        String crawlerName = config != null ? config.displayName : selectedCrawlerName;
+        
+        setBorder(BorderFactory.createTitledBorder("Web Crawler Control - " + crawlerName));
+        
+        // Update button labels and visibility based on crawler capabilities
+        if (crawlButton != null) {
+            crawlButton.setText("Crawl Data from " + crawlerName);
+            crawlButton.setVisible(config != null && config.supportsKeywordSearch);
+        }
+        if (crawlUrlButton != null) {
+            crawlUrlButton.setText("Crawl from URLs (" + crawlerName + ")");
+            crawlUrlButton.setVisible(config != null && config.supportsUrlCrawl);
+        }
+        
+        crawlResultsArea.setText("✓ Ready to crawl with " + crawlerName + "\n");
+        statusLabel.setText("Selected: " + crawlerName);
+    }
+    
+    private String getCrawlerNameByDisplay(String displayName) {
+        for (String crawlerName : crawlerRegistry.getCrawlerNames()) {
+            CrawlerRegistry.CrawlerConfig config = crawlerRegistry.getConfig(crawlerName);
+            if (config != null && config.displayName.equals(displayName)) {
+                return crawlerName;
+            }
+        }
+        return "YOUTUBE"; // Fallback
     }
 
     private JPanel createConfigPanel() {
@@ -215,7 +281,7 @@ public class CrawlControlPanel extends JPanel {
 
     private void startCrawling() {
         new Thread(() -> {
-            Object crawler = null;
+            DataCrawler crawler = null;
             try {
                 crawlButton.setEnabled(false);
                 progressBar.setValue(0);
@@ -224,7 +290,7 @@ public class CrawlControlPanel extends JPanel {
                 int commentLimit = (Integer) commentLimitSpinner.getValue();
                 String[] keywords = keywordArea.getText().split("\n");
                 
-                // Filter and clean hashtags
+                // Filter and clean keywords
                 List<String> hashtags = new ArrayList<>();
                 for (String keyword : keywords) {
                     String cleaned = keyword.trim();
@@ -233,80 +299,63 @@ public class CrawlControlPanel extends JPanel {
                     }
                 }
 
-                statusLabel.setText("⏳ Crawling in progress... (This may take a while)");
+                statusLabel.setText("⏳ Crawling in progress...");
                 progressBar.setIndeterminate(true);
+
+                CrawlerRegistry.CrawlerConfig config = crawlerRegistry.getConfig(selectedCrawlerName);
+                String crawlerDisplayName = config != null ? config.displayName : selectedCrawlerName;
+                
+                crawlResultsArea.setText("Starting " + crawlerDisplayName + " crawl...\n");
+                crawlResultsArea.append("Post Limit: " + postLimit + "\n");
+                crawlResultsArea.append("Comment Limit per Post: " + commentLimit + "\n");
+                crawlResultsArea.append("Keywords: " + String.join(", ", hashtags) + "\n");
+                crawlResultsArea.append("-".repeat(60) + "\n\n");
 
                 List<Post> posts = new ArrayList<>();
                 boolean usedRealCrawler = false;
-
-                // YouTube crawling only
-                crawlResultsArea.setText("Starting YouTube crawl...\n");
-                crawlResultsArea.append("Video Limit: " + postLimit + "\n");
-                crawlResultsArea.append("Comment Limit per Video: " + commentLimit + "\n");
-                crawlResultsArea.append("Keywords/Hashtags: " + String.join(", ", hashtags) + "\n");
-                crawlResultsArea.append("-".repeat(60) + "\n\n");
-
+                
+                // Try to initialize and use the selected crawler
                 try {
-                    crawlResultsArea.append("Initializing YouTube Selenium crawler...\n");
-                    crawlResultsArea.append("Checking for ChromeDriver and Chrome browser...\n\n");
+                    crawlResultsArea.append("Initializing " + crawlerDisplayName + " crawler...\n");
+                    crawler = crawlerRegistry.createCrawler(selectedCrawlerName);
                     
-                    YouTubeCrawler youtubeCrawler = new YouTubeCrawler();
-                    youtubeCrawler.initialize();
-                    crawler = youtubeCrawler;
-                    
-                    if (youtubeCrawler.isInitialized()) {
-                        crawlResultsArea.append("✓ YouTube crawler initialized\n");
-                        crawlResultsArea.append("Crawling from YouTube keywords...\n\n");
-                        posts = youtubeCrawler.crawlPosts(new ArrayList<>(List.of(keywords)), hashtags, postLimit);
-                        usedRealCrawler = true;
-                        crawlResultsArea.append("✓ Successfully crawled " + posts.size() + " videos from YouTube\n\n");
-                    } else {
-                        throw new Exception("Failed to initialize ChromeDriver - check console for details");
+                    // Initialize if required
+                    if (config != null && config.requiresInitialization && crawler instanceof YouTubeCrawler) {
+                        ((YouTubeCrawler) crawler).initialize();
                     }
-                } catch (IllegalStateException ise) {
-                    crawlResultsArea.append("❌ ChromeDriver Not Found\n");
-                    crawlResultsArea.append("Error: " + ise.getMessage() + "\n\n");
-                    crawlResultsArea.append("SOLUTIONS:\n");
-                    crawlResultsArea.append("1. Install Chrome: https://www.google.com/chrome/\n");
-                    crawlResultsArea.append("2. Download ChromeDriver: https://chromedriver.chromium.org/\n");
-                    crawlResultsArea.append("3. Move to /usr/local/bin/ or add to PATH\n\n");
-                    crawlResultsArea.append("For now, using sample data...\n\n");
+                    
+                    if (crawler.isInitialized() || !config.requiresInitialization) {
+                        crawlResultsArea.append("✓ Crawler initialized\n");
+                        crawlResultsArea.append("Crawling...\n\n");
+                        posts = crawler.crawlPosts(hashtags, new ArrayList<>(), postLimit);
+                        usedRealCrawler = true;
+                        crawlResultsArea.append("✓ Successfully crawled " + posts.size() + " items from " + crawlerDisplayName + "\n\n");
+                    }
+                    
+                    if (posts.isEmpty() && usedRealCrawler) {
+                        throw new Exception("Crawler returned no results");
+                    }
+                } catch (Exception e) {
+                    crawlResultsArea.append("⚠️ " + crawlerDisplayName + " crawler unavailable: " + e.getMessage() + "\n\n");
+                    crawlResultsArea.append("Falling back to Mock Data generator...\n\n");
                     
                     // Fallback to mock data
-                    MockDataCrawler mockCrawler = new MockDataCrawler();
-                    posts = mockCrawler.crawlPosts(
-                        new ArrayList<>(List.of(keywords)),
-                        hashtags,
-                        postLimit
-                    );
-                    usedRealCrawler = false;
-                } catch (Exception ytError) {
-                    crawlResultsArea.append("⚠ YouTube crawler unavailable\n");
-                    crawlResultsArea.append("Reason: " + ytError.getClass().getSimpleName() + "\n");
-                    crawlResultsArea.append("Details: " + ytError.getMessage() + "\n\n");
-                    crawlResultsArea.append("Falling back to sample data generator...\n\n");
-                    
-                    // Fallback to mock data
-                    MockDataCrawler mockCrawler = new MockDataCrawler();
-                    posts = mockCrawler.crawlPosts(
-                        new ArrayList<>(List.of(keywords)),
-                        hashtags,
-                        postLimit
-                    );
+                    crawler = crawlerRegistry.createCrawler("MOCK");
+                    posts = crawler.crawlPosts(new ArrayList<>(List.of(keywords)), hashtags, postLimit);
                     usedRealCrawler = false;
                 }
 
-                // Only add mock comments if using mock data (real crawler already has comments)
+                // Add comments if using mock data (real crawlers already have comments)
                 if (!usedRealCrawler) {
                     for (Post post : posts) {
-                        addCommentsToPost(post, commentLimit);
+                        CrawlingUtility.addCommentsToPost(post, commentLimit);
                     }
                 }
 
-                // Add posts to model
+                // Process posts and add to model
                 for (Post post : posts) {
-                    // Automatically assign disaster type based on keywords
-                    DisasterType disasterType = findDisasterTypeForPost(post, hashtags);
+                    // Assign disaster type based on keywords
+                    DisasterType disasterType = CrawlingUtility.findDisasterTypeForPost(post, hashtags);
                     if (post instanceof YouTubePost) {
                         ((YouTubePost) post).setDisasterType(disasterType);
                     }
@@ -317,23 +366,22 @@ public class CrawlControlPanel extends JPanel {
                 updateCrawlResults(posts);
                 progressBar.setIndeterminate(false);
                 progressBar.setValue(100);
-                statusLabel.setText("✓ Crawl completed successfully (" + posts.size() + " posts)");
+                statusLabel.setText("✓ Crawl completed: " + posts.size() + " posts added");
 
             } catch (Exception e) {
                 crawlResultsArea.append("\n✗ Error during crawling: " + e.getMessage());
                 statusLabel.setText("✗ Error: " + e.getMessage());
                 progressBar.setIndeterminate(false);
-                System.err.println("Crawling error: " + e.getMessage());
+                LOGGER.severe("Crawling error: " + e.getMessage());
+                e.printStackTrace();
             } finally {
                 crawlButton.setEnabled(true);
                 // Cleanup crawler resources
                 if (crawler != null) {
                     try {
-                        if (crawler instanceof YouTubeCrawler) {
-                            ((YouTubeCrawler) crawler).shutdown();
-                        }
+                        crawler.shutdown();
                     } catch (Exception e) {
-                        System.err.println("Error shutting down crawler: " + e.getMessage());
+                        LOGGER.warning("Error shutting down crawler: " + e.getMessage());
                     }
                 }
             }
@@ -466,43 +514,6 @@ public class CrawlControlPanel extends JPanel {
                 crawlUrlButton.setEnabled(true);
             }
         }).start();
-    }
-
-    private void addCommentsToPost(Post post, int commentLimit) {
-        String[] commentTemplates = {
-            "The relief distribution was well organized",
-            "Not enough resources were provided to affected areas",
-            "Great effort from the humanitarian team",
-            "Need more medical support in the affected region",
-            "Food aid arrived on time",
-            "Disappointed with the response time",
-            "Excellent coordination with local authorities",
-            "More shelter needed for displaced families",
-            "Transportation assistance was very helpful",
-            "Cash assistance made a big difference"
-        };
-
-        int commentCount = Math.min(commentLimit, commentTemplates.length);
-        for (int i = 0; i < commentCount; i++) {
-            String content = commentTemplates[i];
-            Comment comment = new Comment(
-                "COMMENT_" + post.getPostId() + "_" + i,
-                post.getPostId(),
-                content,
-                post.getCreatedAt().plusHours(i + 1),
-                "User_" + (i + 1)
-            );
-
-            // Random sentiment
-            Sentiment.SentimentType type = Math.random() > 0.5 ?
-                (Math.random() > 0.5 ? Sentiment.SentimentType.POSITIVE : Sentiment.SentimentType.NEGATIVE)
-                : Sentiment.SentimentType.NEUTRAL;
-            double confidence = 0.7 + Math.random() * 0.3;
-
-            comment.setSentiment(new Sentiment(type, confidence, content));
-            comment.setReliefItem(post.getReliefItem());
-            post.addComment(comment);
-        }
     }
 
     private void updateCrawlResults(List<Post> posts) {
@@ -713,21 +724,6 @@ public class CrawlControlPanel extends JPanel {
      * Find the appropriate disaster type for a post based on keywords used
      */
     @SuppressWarnings("unused")
-    private DisasterType findDisasterTypeForPost(Post ignored, List<String> keywords) {
-        DisasterManager manager = DisasterManager.getInstance();
-        
-        // Try to find a matching disaster type from the keywords
-        for (String keyword : keywords) {
-            DisasterType disaster = manager.findDisasterType(keyword);
-            if (disaster != null) {
-                return disaster;
-            }
-        }
-        
-        // Default to "yagi" if no match found
-        return manager.getDisasterType("yagi");
-    }
-
     /**
      * Reset the database by deleting the old file and creating a new empty one
      */
