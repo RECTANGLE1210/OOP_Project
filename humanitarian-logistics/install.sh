@@ -16,9 +16,9 @@ set -e  # Exit on error
 
 echo ""
 echo "╔════════════════════════════════════════════════════════════════════════╗"
-echo "║     HUMANITARIAN LOGISTICS - First Time Installation                    ║"
+echo "║     HUMANITARIAN LOGISTICS - First Time Installation                   ║"
 echo "║                                                                        ║"
-echo "║  This is a one-time setup. On subsequent runs, use run.sh directly.   ║"
+echo "║  This is a one-time setup. On subsequent runs, use run.sh directly.    ║"
 echo "╚════════════════════════════════════════════════════════════════════════╝"
 echo ""
 
