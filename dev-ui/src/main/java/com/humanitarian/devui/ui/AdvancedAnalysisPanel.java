@@ -131,9 +131,10 @@ public class AdvancedAnalysisPanel extends JPanel {
                 System.out.println("DEBUG: Total posts: " + model.getPosts().size());
                 
                 if (allComments.isEmpty()) {
-                    sb.append("❌ No comments found in database!\n");
-                    sb.append("Please load data first using 'Use Our Database' button.\n");
+                    sb.append("❌ No comments found for selected filters!\n");
+                    sb.append("Try selecting different disaster type or category.\n");
                     textArea0.setText(sb.toString());
+                    chartPanel0.setChart(null);  // Clear chart
                     return;
                 }
                 
@@ -753,6 +754,15 @@ public class AdvancedAnalysisPanel extends JPanel {
                         .collect(Collectors.toList());
                 }
                 
+                // Get comments from database and filter by disaster
+                List<Comment> allComments = getAllCommentsFromDatabase();
+                if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
+                    final String disasterFilter = selectedDisaster;
+                    allComments = allComments.stream()
+                        .filter(c -> disasterFilter.equals(c.getDisasterType()))
+                        .collect(Collectors.toList());
+                }
+                
                 StringBuilder sb = new StringBuilder();
 
                 sb.append("═".repeat(70)).append("\n");
@@ -762,41 +772,41 @@ public class AdvancedAnalysisPanel extends JPanel {
                 }
                 sb.append("═".repeat(70)).append("\n\n");
 
-                sb.append("📊 PROBLEM 1: PUBLIC SATISFACTION ANALYSIS\n");
+                sb.append("📊 PROBLEM 1: PUBLIC SATISFACTION ANALYSIS (Comments)\n");
                 sb.append("─".repeat(70)).append("\n");
 
-                Map<ReliefItem.Category, List<Post>> byCategory = posts.stream()
-                    .filter(p -> p.getReliefItem() != null)
-                    .collect(Collectors.groupingBy(p -> p.getReliefItem().getCategory()));
+                Map<ReliefItem.Category, List<Comment>> byCategory = allComments.stream()
+                    .filter(c -> c.getReliefItem() != null)
+                    .collect(Collectors.groupingBy(c -> c.getReliefItem().getCategory()));
 
-                byCategory.forEach((cat, catPosts) -> {
-                    long pos = catPosts.stream().filter(p -> p.getSentiment() != null && p.getSentiment().isPositive()).count();
-                    double posPct = (double) pos / catPosts.size() * 100;
+                byCategory.forEach((cat, catComments) -> {
+                    long pos = catComments.stream().filter(c -> c.getSentiment() != null && c.getSentiment().isPositive()).count();
+                    double posPct = catComments.size() > 0 ? (double) pos / catComments.size() * 100 : 0;
                     String status = posPct > 70 ? "✅ EXCELLENT" : (posPct > 50 ? "⚠️ MODERATE" : "❌ CRITICAL");
-                    sb.append(String.format("%-20s: %.1f%% satisfaction %s\n", cat.getDisplayName(), posPct, status));
+                    sb.append(String.format("%-20s: %.1f%% satisfaction %s (%d comments)\n", cat.getDisplayName(), posPct, status, catComments.size()));
                 });
 
-                sb.append("\n📈 PROBLEM 2: TEMPORAL SENTIMENT TRACKING\n");
+                sb.append("\n📈 PROBLEM 2: TEMPORAL SENTIMENT TRACKING (Comments)\n");
                 sb.append("─".repeat(70)).append("\n");
 
-                Map<String, List<Post>> byDate = posts.stream()
-                    .collect(Collectors.groupingBy(p -> p.getCreatedAt().toLocalDate().toString()));
+                Map<String, List<Comment>> byDate = allComments.stream()
+                    .collect(Collectors.groupingBy(c -> c.getCreatedAt().toLocalDate().toString()));
 
                 byDate.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
-                    List<Post> datePosts = entry.getValue();
-                    long pos = datePosts.stream().filter(p -> p.getSentiment() != null && p.getSentiment().isPositive()).count();
-                    long neg = datePosts.stream().filter(p -> p.getSentiment() != null && p.getSentiment().isNegative()).count();
+                    List<Comment> dateComments = entry.getValue();
+                    long pos = dateComments.stream().filter(c -> c.getSentiment() != null && c.getSentiment().isPositive()).count();
+                    long neg = dateComments.stream().filter(c -> c.getSentiment() != null && c.getSentiment().isNegative()).count();
                     String trend = pos > neg ? "↗ IMPROVING" : (neg > pos ? "↘ DETERIORATING" : "→ STABLE");
                     sb.append(String.format("%s: %s (P:%d N:%d)\n", entry.getKey(), trend, pos, neg));
                 });
 
                 sb.append("\n📋 SUMMARY\n");
                 sb.append("─".repeat(70)).append("\n");
-                sb.append(String.format("Total Posts: %d\n", posts.size()));
-                sb.append(String.format("Total Comments: %d\n", posts.stream().mapToInt(p -> p.getComments().size()).sum()));
+                sb.append(String.format("Total Comments: %d\n", allComments.size()));
 
-                long totalPos = posts.stream().filter(p -> p.getSentiment() != null && p.getSentiment().isPositive()).count();
-                sb.append(String.format("Overall Satisfaction: %.1f%%\n", (double) totalPos / posts.size() * 100));
+                long totalPos = allComments.stream().filter(c -> c.getSentiment() != null && c.getSentiment().isPositive()).count();
+                double overallSatisfaction = allComments.size() > 0 ? (double) totalPos / allComments.size() * 100 : 0;
+                sb.append(String.format("Overall Satisfaction: %.1f%%\n", overallSatisfaction));
 
                 textArea.setText(sb.toString());
             } catch (Exception ex) {
