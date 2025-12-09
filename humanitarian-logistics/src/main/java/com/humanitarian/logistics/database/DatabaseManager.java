@@ -93,7 +93,8 @@ public class DatabaseManager {
                     stmt.execute("PRAGMA journal_mode = WAL");
                 }
                 createTables();
-                System.out.println("Database initialized: " + dbUrl);
+                System.out.println("[DB] Database initialized: " + dbUrl);
+                System.out.println("[DB] Database file path: " + dbFilePath);
                 initialized = true;
             }
         }
@@ -205,18 +206,29 @@ public class DatabaseManager {
 
     public void updateComment(Comment comment) throws SQLException, ClassNotFoundException {
         ensureConnection();
-        String sql = "UPDATE comments SET content = ?, sentiment = ?, confidence = ?, relief_category = ? WHERE comment_id = ?";
+        // Use INSERT OR REPLACE to handle both insert and update cases
+        // This ensures the comment is saved whether it exists or not
+        String sql = "INSERT OR REPLACE INTO comments VALUES(?,?,?,?,?,?,?,?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, comment.getContent());
-            pstmt.setString(2, comment.getSentiment() != null ? comment.getSentiment().getType().toString() : null);
-            pstmt.setDouble(3, comment.getSentiment() != null ? comment.getSentiment().getConfidence() : 0);
+            pstmt.setString(1, comment.getCommentId());
+            pstmt.setString(2, comment.getPostId());
+            pstmt.setString(3, comment.getContent());
+            pstmt.setString(4, comment.getAuthor());
+            pstmt.setString(5, comment.getCreatedAt().toString());
+            pstmt.setString(6, comment.getSentiment() != null ? comment.getSentiment().getType().toString() : null);
+            pstmt.setDouble(7, comment.getSentiment() != null ? comment.getSentiment().getConfidence() : 0);
             String updateReliefCategory = null;
             if (comment.getReliefItem() != null && comment.getReliefItem().getCategory() != null) {
                 updateReliefCategory = comment.getReliefItem().getCategory().name();
             }
-            pstmt.setString(4, updateReliefCategory);
-            pstmt.setString(5, comment.getCommentId());
-            pstmt.executeUpdate();
+            pstmt.setString(8, updateReliefCategory);
+            
+            int rowsAffected = pstmt.executeUpdate();
+            System.out.println("    [DB] INSERT OR REPLACE: comment_id=" + comment.getCommentId() +
+                " | post_id=" + comment.getPostId() +
+                " | sentiment=" + (comment.getSentiment() != null ? comment.getSentiment().getType() : "NULL") +
+                " | confidence=" + (comment.getSentiment() != null ? String.format("%.4f", comment.getSentiment().getConfidence()) : "0.0000") +
+                " | category=" + updateReliefCategory);
             commit();
         }
     }

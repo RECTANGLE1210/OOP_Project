@@ -185,13 +185,26 @@ public class DatabaseLoader {
 
                     Comment comment = new Comment(commentId, postId, content, createdAt, author);
                     
+                    // Load sentiment and confidence from database
+                    String sentimentStr = rs.getString("sentiment");
+                    if (sentimentStr != null && !sentimentStr.isEmpty()) {
+                        try {
+                            Sentiment.SentimentType sentimentType = Sentiment.SentimentType.valueOf(sentimentStr);
+                            double confidence = rs.getDouble("confidence");
+                            comment.setSentiment(new Sentiment(sentimentType, confidence, content));
+                        } catch (IllegalArgumentException | SQLException e) {
+                            // If sentiment data is invalid, leave as null for re-analysis
+                        }
+                    }
+                    
+                    // Load relief category from database
                     String categoryStr = rs.getString("relief_category");
                     if (categoryStr != null && !categoryStr.isEmpty()) {
                         try {
                             ReliefItem.Category category = ReliefItem.Category.valueOf(categoryStr);
                             comment.setReliefItem(new ReliefItem(category, categoryStr, 1));
                         } catch (IllegalArgumentException e) {
-
+                            // If category data is invalid, leave as null for re-analysis
                         }
                     }
                     
