@@ -84,7 +84,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout(10, 10));
 
-        String[] columns = {"Comment ID", "Author", "Posted At", "Sentiment", "Content Preview"};
+        String[] columns = {"Comment ID", "Author", "Posted At", "Sentiment", "Category", "Content Preview"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -182,6 +182,9 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         String sentimentType = comment.getSentiment() != null ? 
             comment.getSentiment().getType().toString() : "N/A";
         
+        String category = comment.getReliefItem() != null && comment.getReliefItem().getCategory() != null ?
+            comment.getReliefItem().getCategory().getDisplayName() : "N/A";
+        
         String content = comment.getContent();
         if (content.length() > 50) {
             content = content.substring(0, 47) + "...";
@@ -196,6 +199,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             comment.getAuthor(),
             dateStr,
             sentimentType,
+            category,
             content
         });
     }
@@ -349,7 +353,11 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         panel.add(sentimentLabel);
         
         JComboBox<Sentiment.SentimentType> sentimentCombo = new JComboBox<>(Sentiment.SentimentType.values());
-        sentimentCombo.setSelectedItem(comment.getSentiment().getType());
+        if (comment.getSentiment() != null) {
+            sentimentCombo.setSelectedItem(comment.getSentiment().getType());
+        } else {
+            sentimentCombo.setSelectedIndex(0);
+        }
         panel.add(sentimentCombo);
         panel.add(Box.createVerticalStrut(10));
 
@@ -357,7 +365,8 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         confidenceLabel.setFont(new Font("Arial", Font.BOLD, 11));
         panel.add(confidenceLabel);
         
-        JSpinner confidenceSpinner = new JSpinner(new SpinnerNumberModel(comment.getSentiment().getConfidence(), 0.0, 1.0, 0.1));
+        double confidence = comment.getSentiment() != null ? comment.getSentiment().getConfidence() : 0.0;
+        JSpinner confidenceSpinner = new JSpinner(new SpinnerNumberModel(confidence, 0.0, 1.0, 0.1));
         panel.add(confidenceSpinner);
         panel.add(Box.createVerticalGlue());
 

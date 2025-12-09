@@ -10,6 +10,7 @@ public class DatabaseManager {
     private static final Object lock = new Object();
     
     private String dbUrl;
+    private String dbFilePath;
     private Connection connection;
     private boolean initialized = false;
 
@@ -28,7 +29,7 @@ public class DatabaseManager {
         return instance;
     }
 
-    private String getDbUrl() {
+    private String getDbFilePath() {
         String currentDir = System.getProperty("user.dir");
         String basePath;
         
@@ -40,10 +41,8 @@ public class DatabaseManager {
         }
         
         if (projectRoot != null) {
-
             basePath = projectRoot.getAbsolutePath() + "/dev-ui/data";
         } else {
-
             if (currentDir.endsWith("dev-ui")) {
                 basePath = currentDir + "/data";
             } else {
@@ -56,15 +55,15 @@ public class DatabaseManager {
             dir.mkdirs();
         }
         
-        String dbPath = basePath + "/humanitarian_logistics_curated.db";
-        return "jdbc:sqlite:" + dbPath;
+        return basePath + "/humanitarian_logistics_curated.db";
     }
 
     private void ensureConnection() throws ClassNotFoundException, SQLException {
         synchronized (lock) {
             if (!initialized) {
                 Class.forName("org.sqlite.JDBC");
-                dbUrl = getDbUrl();
+                dbFilePath = getDbFilePath();
+                dbUrl = "jdbc:sqlite:" + dbFilePath;
                 
                 if (connection != null && !connection.isClosed()) {
                     try {
@@ -74,13 +73,13 @@ public class DatabaseManager {
                     }
                 }
                 
-                String urlWithTimeout = dbUrl + "?timeout=30000&journal_mode=WAL";
-                connection = DriverManager.getConnection(urlWithTimeout);
+                // Create connection WITHOUT query parameters in URL to avoid filename issues
+                connection = DriverManager.getConnection(dbUrl);
                 
                 try (Statement stmt = connection.createStatement()) {
+                    stmt.execute("PRAGMA busy_timeout = 30000");
                     stmt.execute("PRAGMA foreign_keys = ON");
                     stmt.execute("PRAGMA journal_mode = WAL");
-                    stmt.execute("PRAGMA busy_timeout = 30000");
                 }
                 createTables();
                 System.out.println("Database initialized: " + dbUrl);

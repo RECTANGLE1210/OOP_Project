@@ -78,7 +78,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout(10, 10));
 
-        String[] columns = {"Comment ID", "Author", "Posted At", "Sentiment", "Content Preview"};
+        String[] columns = {"Comment ID", "Author", "Posted At", "Sentiment", "Category", "Content Preview"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -176,6 +176,9 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         String sentimentType = comment.getSentiment() != null ? 
             comment.getSentiment().getType().toString() : "N/A";
         
+        String category = comment.getReliefItem() != null && comment.getReliefItem().getCategory() != null ?
+            comment.getReliefItem().getCategory().getDisplayName() : "N/A";
+        
         String content = comment.getContent();
         if (content.length() > 50) {
             content = content.substring(0, 47) + "...";
@@ -190,6 +193,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             comment.getAuthor(),
             dateStr,
             sentimentType,
+            category,
             content
         });
     }
@@ -214,8 +218,15 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             details.append("ID: ").append(comment.getCommentId()).append("\n");
             details.append("Author: ").append(comment.getAuthor()).append("\n");
             details.append("Posted: ").append(comment.getCreatedAt()).append("\n");
-            details.append("Sentiment: ").append(comment.getSentiment().getType()).append("\n");
-            details.append("Confidence: ").append(String.format("%.2f", comment.getSentiment().getConfidence())).append("\n");
+            
+            // Handle null sentiment
+            if (comment.getSentiment() != null) {
+                details.append("Sentiment: ").append(comment.getSentiment().getType()).append("\n");
+                details.append("Confidence: ").append(String.format("%.2f", comment.getSentiment().getConfidence())).append("\n");
+            } else {
+                details.append("Sentiment: [Not analyzed yet]\n");
+                details.append("Confidence: N/A\n");
+            }
             details.append("\n--- Content ---\n");
             details.append(comment.getContent()).append("\n");
             
@@ -342,14 +353,19 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
 
         panel.add(new JLabel("Sentiment:"));
         JComboBox<Sentiment.SentimentType> sentimentCombo = new JComboBox<>(Sentiment.SentimentType.values());
-        sentimentCombo.setSelectedItem(comment.getSentiment().getType());
+        if (comment.getSentiment() != null) {
+            sentimentCombo.setSelectedItem(comment.getSentiment().getType());
+        } else {
+            sentimentCombo.setSelectedIndex(0);
+        }
         sentimentCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
         panel.add(sentimentCombo);
         panel.add(Box.createVerticalStrut(10));
 
         panel.add(new JLabel("Confidence (0.0 - 1.0):"));
+        double confidence = comment.getSentiment() != null ? comment.getSentiment().getConfidence() : 0.0;
         JSpinner confidenceSpinner = new JSpinner(new SpinnerNumberModel(
-            comment.getSentiment().getConfidence(), 0.0, 1.0, 0.1
+            confidence, 0.0, 1.0, 0.1
         ));
         panel.add(confidenceSpinner);
         panel.add(Box.createVerticalGlue());

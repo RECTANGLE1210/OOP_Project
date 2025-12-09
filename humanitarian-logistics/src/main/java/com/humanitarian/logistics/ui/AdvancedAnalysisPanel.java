@@ -260,9 +260,10 @@ public class AdvancedAnalysisPanel extends JPanel {
                         
                         sb.append("\n\n📝 Recent Posts/Comments for this category:\n");
                         categoryPosts.stream().limit(10).forEach(post -> {
+                            String sentiment = post.getSentiment() != null ? post.getSentiment().getType().toString() : "N/A";
                             sb.append(String.format("  - %s (%s): %s\n",
                                 post.getAuthor(),
-                                post.getSentiment().getType(),
+                                sentiment,
                                 post.getContent().substring(0, Math.min(50, post.getContent().length())) + "..."
                             ));
                         });
@@ -387,10 +388,12 @@ public class AdvancedAnalysisPanel extends JPanel {
                 byCategory.forEach((category, categoryPosts) -> {
                     sb.append(String.format("📦 %s (%d posts)\n", category.getDisplayName(), categoryPosts.size()));
                     categoryPosts.forEach(post -> {
+                        String sentiment = post.getSentiment() != null ? post.getSentiment().getType().toString() : "N/A";
+                        double confidence = post.getSentiment() != null ? post.getSentiment().getConfidence() : 0.0;
                         sb.append(String.format("   - %s: %s (%.2f)\n",
                             post.getAuthor(),
-                            post.getSentiment().getType(),
-                            post.getSentiment().getConfidence()));
+                            sentiment,
+                            confidence));
                     });
                     sb.append("\n");
                 });
@@ -661,11 +664,13 @@ public class AdvancedAnalysisPanel extends JPanel {
 
                         for (int i = 0; i < sorted.size(); i++) {
                             Comment c = sorted.get(i);
+                            String sentiment = c.getSentiment() != null ? c.getSentiment().getType().toString() : "N/A";
+                            double confidence = c.getSentiment() != null ? c.getSentiment().getConfidence() : 0.0;
                             sb.append(String.format("     [%d] %s @ %s: %s (%.2f) - \"%s\"\n",
                                 i + 1, c.getAuthor(),
                                 c.getCreatedAt().format(DateTimeFormatter.ofPattern("HH:mm")),
-                                c.getSentiment().getType(),
-                                c.getSentiment().getConfidence(),
+                                sentiment,
+                                confidence,
                                 truncate(c.getContent(), 50)));
                         }
                         sb.append("\n");
