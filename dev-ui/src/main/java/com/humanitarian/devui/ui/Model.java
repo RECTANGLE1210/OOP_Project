@@ -1,13 +1,22 @@
 package com.humanitarian.devui.ui;
 
-import com.humanitarian.devui.model.*;
-import com.humanitarian.devui.sentiment.SentimentAnalyzer;
-import com.humanitarian.devui.sentiment.PythonCategoryClassifier;
-import com.humanitarian.devui.database.DatabaseManager;
-import com.humanitarian.devui.database.DataPersistenceManager;
-import com.humanitarian.devui.analysis.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-import java.util.*;
+import com.humanitarian.devui.analysis.AnalysisModule;
+import com.humanitarian.devui.analysis.SatisfactionAnalysisModule;
+import com.humanitarian.devui.analysis.TimeSeriesSentimentModule;
+import com.humanitarian.devui.database.DataPersistenceManager;
+import com.humanitarian.devui.database.DatabaseManager;
+import com.humanitarian.devui.model.Comment;
+import com.humanitarian.devui.model.Post;
+import com.humanitarian.devui.model.ReliefItem;
+import com.humanitarian.devui.model.Sentiment;
+import com.humanitarian.devui.sentiment.PythonCategoryClassifier;
+import com.humanitarian.devui.sentiment.SentimentAnalyzer;
 
 public class Model {
     private List<Post> posts;
