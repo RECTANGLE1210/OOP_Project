@@ -1,9 +1,20 @@
 package com.humanitarian.logistics.database;
 
-import com.humanitarian.logistics.model.*;
-import java.sql.*;
-import java.util.*;
 import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.humanitarian.logistics.model.Comment;
+import com.humanitarian.logistics.model.Post;
+import com.humanitarian.logistics.model.ReliefItem;
+import com.humanitarian.logistics.model.Sentiment;
+import com.humanitarian.logistics.model.YouTubePost;
 
 public class DatabaseManager {
     private static DatabaseManager instance;

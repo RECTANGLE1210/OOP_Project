@@ -1,13 +1,36 @@
 package com.humanitarian.logistics.ui;
 
-import com.humanitarian.logistics.model.*;
-import com.humanitarian.logistics.database.DatabaseManager;
-import javax.swing.*;
-import javax.swing.table.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingUtilities;
+import javax.swing.table.DefaultTableModel;
+
+import com.humanitarian.logistics.database.DatabaseManager;
+import com.humanitarian.logistics.model.Comment;
+import com.humanitarian.logistics.model.Post;
+import com.humanitarian.logistics.model.ReliefItem;
+import com.humanitarian.logistics.model.Sentiment;
 
 public class CommentManagementPanel extends JPanel implements ModelListener {
     private final Model model;
@@ -368,6 +391,16 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         double confidence = comment.getSentiment() != null ? comment.getSentiment().getConfidence() : 0.0;
         JSpinner confidenceSpinner = new JSpinner(new SpinnerNumberModel(confidence, 0.0, 1.0, 0.1));
         panel.add(confidenceSpinner);
+        panel.add(Box.createVerticalStrut(10));
+
+        JLabel categoryLabel = new JLabel("Category:");
+        categoryLabel.setFont(new Font("Arial", Font.BOLD, 11));
+        panel.add(categoryLabel);
+        
+        JComboBox<ReliefItem.Category> categoryCombo = new JComboBox<>(ReliefItem.Category.values());
+        ReliefItem.Category currentCategory = comment.getReliefItem() != null ? comment.getReliefItem().getCategory() : ReliefItem.Category.FOOD;
+        categoryCombo.setSelectedItem(currentCategory);
+        panel.add(categoryCombo);
         panel.add(Box.createVerticalGlue());
 
         JPanel buttonPanel = new JPanel();
@@ -388,6 +421,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                 
                 Sentiment.SentimentType newType = (Sentiment.SentimentType) sentimentCombo.getSelectedItem();
                 double newConfidence = ((Number) confidenceSpinner.getValue()).doubleValue();
+                ReliefItem.Category newCategory = (ReliefItem.Category) categoryCombo.getSelectedItem();
                 
                 Sentiment newSentiment = new Sentiment(newType, newConfidence, newContent);
                 Comment updatedComment = new Comment(
@@ -399,7 +433,15 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                 );
                 updatedComment.setSentiment(newSentiment);
                 if (comment.getReliefItem() != null) {
-                    updatedComment.setReliefItem(comment.getReliefItem());
+                    ReliefItem updatedReliefItem = new ReliefItem(
+                        newCategory,
+                        comment.getReliefItem().getDescription(),
+                        comment.getReliefItem().getPriority()
+                    );
+                    updatedComment.setReliefItem(updatedReliefItem);
+                } else {
+                    ReliefItem newReliefItem = new ReliefItem(newCategory, "", 3);
+                    updatedComment.setReliefItem(newReliefItem);
                 }
                 
                 parentPost.updateComment(updatedComment);

@@ -1,18 +1,39 @@
 package com.humanitarian.logistics.ui;
 
-import com.humanitarian.logistics.model.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
+
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
 
-import javax.swing.*;
-import java.awt.*;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.humanitarian.logistics.model.Comment;
+import com.humanitarian.logistics.model.DisasterManager;
+import com.humanitarian.logistics.model.DisasterType;
+import com.humanitarian.logistics.model.Post;
+import com.humanitarian.logistics.model.ReliefItem;
+import com.humanitarian.logistics.model.YouTubePost;
 
 public class AdvancedAnalysisPanel extends JPanel {
     private Model model;
@@ -92,47 +113,49 @@ public class AdvancedAnalysisPanel extends JPanel {
         JButton btnAnalyzeCategory = new JButton("Analyze");
         btnAnalyzeCategory.addActionListener(e -> {
             try {
-
-                String selectedDisaster = (String) disasterSelector.getSelectedItem();
                 String selectedCategory = (String) categorySelector.getSelectedItem();
                 
-                List<Post> posts = model.getPosts();
-                if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
-                    posts = posts.stream()
-                        .filter(p -> {
-                            if (p instanceof YouTubePost) {
-                                YouTubePost ytPost = (YouTubePost) p;
-                                DisasterType type = ytPost.getDisasterType();
-                                return type != null && type.getName().equals(selectedDisaster);
-                            }
-                            return false;
-                        })
-                        .collect(Collectors.toList());
-                }
-                
                 StringBuilder sb = new StringBuilder();
-                sb.append("=== SATISFACTION ANALYSIS: ").append(selectedCategory).append(" ===\n\n");
+                sb.append("=== SATISFACTION ANALYSIS (Comments): ").append(selectedCategory).append(" ===\n\n");
                 
                 DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+                List<Comment> allComments = getAllCommentsFromDatabase();
+                
+                // Debug info
+                System.out.println("DEBUG: Selected category: " + selectedCategory);
+                System.out.println("DEBUG: Total comments from database: " + allComments.size());
+                System.out.println("DEBUG: Total posts: " + model.getPosts().size());
+                
+                if (allComments.isEmpty()) {
+                    sb.append("❌ No comments found in database!\n");
+                    sb.append("Please load data first using 'Use Our Database' button.\n");
+                    textArea0.setText(sb.toString());
+                    return;
+                }
                 
                 if ("ALL CATEGORIES".equals(selectedCategory)) {
 
-                    Map<ReliefItem.Category, List<Post>> byCategory = posts.stream()
-                        .filter(p -> p.getReliefItem() != null)
-                        .collect(Collectors.groupingBy(p -> p.getReliefItem().getCategory()));
+                    Map<ReliefItem.Category, List<Comment>> byCategory = allComments.stream()
+                        .filter(c -> c.getReliefItem() != null)
+                        .collect(Collectors.groupingBy(c -> c.getReliefItem().getCategory()));
                     
-                    byCategory.forEach((category, categoryPosts) -> {
-                        int total = categoryPosts.size();
+                    System.out.println("DEBUG: Categories found: " + byCategory.size());
+                    byCategory.forEach((category, categoryComments) -> {
+                        System.out.println("  - " + category.getDisplayName() + ": " + categoryComments.size() + " comments");
+                    });
+                    
+                    byCategory.forEach((category, categoryComments) -> {
+                        int total = categoryComments.size();
                         if (total == 0) return;
                         
-                        long positive = categoryPosts.stream()
-                            .filter(p -> p.getSentiment() != null && p.getSentiment().isPositive())
+                        long positive = categoryComments.stream()
+                            .filter(c -> c.getSentiment() != null && c.getSentiment().isPositive())
                             .count();
-                        long negative = categoryPosts.stream()
-                            .filter(p -> p.getSentiment() != null && p.getSentiment().isNegative())
+                        long negative = categoryComments.stream()
+                            .filter(c -> c.getSentiment() != null && c.getSentiment().isNegative())
                             .count();
-                        long neutral = categoryPosts.stream()
-                            .filter(p -> p.getSentiment() != null && p.getSentiment().isNeutral())
+                        long neutral = categoryComments.stream()
+                            .filter(c -> c.getSentiment() != null && c.getSentiment().isNeutral())
                             .count();
                         
                         double posPct = (double) positive / total * 100;
@@ -144,7 +167,7 @@ public class AdvancedAnalysisPanel extends JPanel {
                         dataset.addValue(negPct, "Negative", category.getDisplayName());
                         dataset.addValue(neuPct, "Neutral", category.getDisplayName());
                         
-                        sb.append(String.format("📦 %s (Total: %d)\n", category.getDisplayName(), total));
+                        sb.append(String.format("📦 %s (Total: %d comments)\n", category.getDisplayName(), total));
                         sb.append(String.format("   Positive: %d (%.1f%%)\n", positive, posPct));
                         sb.append(String.format("   Negative: %d (%.1f%%)\n", negative, negPct));
                         sb.append(String.format("   Neutral:  %d (%.1f%%)\n", neutral, neuPct));
@@ -178,13 +201,13 @@ public class AdvancedAnalysisPanel extends JPanel {
                         pieDataset.setValue("Neutral", neuSum);
                         
                         chart = ChartFactory.createPieChart(
-                            "Satisfaction Analysis - All Categories (Pie View)",
+                            "Satisfaction Analysis - All Categories (Pie View - Comments)",
                             pieDataset
                         );
                     } else {
 
                         chart = ChartFactory.createStackedBarChart(
-                            "Satisfaction Analysis - All Categories",
+                            "Satisfaction Analysis - All Categories (Comments)",
                             "Relief Category", "Percentage (%)", dataset
                         );
                     }
@@ -201,16 +224,18 @@ public class AdvancedAnalysisPanel extends JPanel {
                     
                     final ReliefItem.Category finalCategory = targetCategory;
                     if (finalCategory != null) {
-                        List<Post> categoryPosts = posts.stream()
-                            .filter(p -> p.getReliefItem() != null && p.getReliefItem().getCategory() == finalCategory)
+                        List<Comment> categoryComments = allComments.stream()
+                            .filter(c -> c.getReliefItem() != null && c.getReliefItem().getCategory() == finalCategory)
                             .collect(Collectors.toList());
                         
-                        int total = categoryPosts.size();
-                        long positive = categoryPosts.stream()
-                            .filter(p -> p.getSentiment() != null && p.getSentiment().isPositive())
+                        System.out.println("DEBUG: Comments for category " + finalCategory.getDisplayName() + ": " + categoryComments.size());
+                        
+                        int total = categoryComments.size();
+                        long positive = categoryComments.stream()
+                            .filter(c -> c.getSentiment() != null && c.getSentiment().isPositive())
                             .count();
-                        long negative = categoryPosts.stream()
-                            .filter(p -> p.getSentiment() != null && p.getSentiment().isNegative())
+                        long negative = categoryComments.stream()
+                            .filter(c -> c.getSentiment() != null && c.getSentiment().isNegative())
                             .count();
                         long neutral = total - positive - negative;
                         
@@ -225,12 +250,12 @@ public class AdvancedAnalysisPanel extends JPanel {
                         pieDataset.setValue("Neutral (" + neutral + ")", neuPct);
                         
                         JFreeChart chart = ChartFactory.createPieChart(
-                            "Sentiment Distribution: " + selectedCategory, pieDataset
+                            "Sentiment Distribution: " + selectedCategory + " (Comments)", pieDataset
                         );
                         chartPanel0.setChart(chart);
                         
                         sb.append(String.format("📊 Detailed Analysis for: %s\n\n", selectedCategory));
-                        sb.append(String.format("Total Records: %d\n", total));
+                        sb.append(String.format("Total Comments: %d\n", total));
                         sb.append(String.format("Positive: %d (%.1f%%)\n", positive, posPct));
                         sb.append(String.format("Negative: %d (%.1f%%)\n", negative, negPct));
                         sb.append(String.format("Neutral:  %d (%.1f%%)\n", neutral, neuPct));
@@ -258,24 +283,28 @@ public class AdvancedAnalysisPanel extends JPanel {
                             sb.append("Recommendation: Urgent intervention required\n");
                         }
                         
-                        sb.append("\n\n📝 Recent Posts/Comments for this category:\n");
-                        categoryPosts.stream().limit(10).forEach(post -> {
-                            String sentiment = post.getSentiment() != null ? post.getSentiment().getType().toString() : "N/A";
+                        sb.append("\n\n📝 Sample Comments for this category:\n");
+                        categoryComments.stream().limit(10).forEach(comment -> {
+                            String sentiment = comment.getSentiment() != null ? comment.getSentiment().getType().toString() : "N/A";
                             sb.append(String.format("  - %s (%s): %s\n",
-                                post.getAuthor(),
+                                comment.getAuthor(),
                                 sentiment,
-                                post.getContent().substring(0, Math.min(50, post.getContent().length())) + "..."
+                                comment.getContent().substring(0, Math.min(50, comment.getContent().length())) + "..."
                             ));
                         });
+                    } else {
+                        sb.append("❌ Category not found: ").append(selectedCategory).append("\n");
                     }
                 }
                 
                 InteractiveChartUtility.enableChartInteractivity(chartPanel0);
                 textArea0.setText(sb.toString());
                 textArea0.setCaretPosition(0);
+                System.out.println("DEBUG: Analysis complete!");
             } catch (Exception ex) {
-                textArea0.setText("Error: " + ex.getMessage());
-
+                System.err.println("ERROR: " + ex.getMessage());
+                ex.printStackTrace();
+                textArea0.setText("Error: " + ex.getMessage() + "\n\nStacktrace:\n" + getStackTrace(ex));
             }
         });
         
@@ -305,21 +334,21 @@ public class AdvancedAnalysisPanel extends JPanel {
         JButton btn1 = new JButton("Refresh");
         btn1.addActionListener(e -> {
             try {
-                List<Post> posts = model.getPosts();
+                List<Comment> allComments = getAllCommentsFromDatabase();
                 DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-                StringBuilder sb = new StringBuilder("=== SATISFACTION BY CATEGORY ===\n\n");
+                StringBuilder sb = new StringBuilder("=== SATISFACTION BY CATEGORY (Based on Comments) ===\n\n");
 
-                Map<ReliefItem.Category, List<Post>> byCategory = posts.stream()
-                    .filter(p -> p.getReliefItem() != null)
-                    .collect(Collectors.groupingBy(p -> p.getReliefItem().getCategory()));
+                Map<ReliefItem.Category, List<Comment>> byCategory = allComments.stream()
+                    .filter(c -> c.getReliefItem() != null)
+                    .collect(Collectors.groupingBy(c -> c.getReliefItem().getCategory()));
 
-                byCategory.forEach((category, categoryPosts) -> {
-                    int total = categoryPosts.size();
-                    long positive = categoryPosts.stream()
-                        .filter(p -> p.getSentiment() != null && p.getSentiment().isPositive())
+                byCategory.forEach((category, categoryComments) -> {
+                    int total = categoryComments.size();
+                    long positive = categoryComments.stream()
+                        .filter(c -> c.getSentiment() != null && c.getSentiment().isPositive())
                         .count();
-                    long negative = categoryPosts.stream()
-                        .filter(p -> p.getSentiment() != null && p.getSentiment().isNegative())
+                    long negative = categoryComments.stream()
+                        .filter(c -> c.getSentiment() != null && c.getSentiment().isNegative())
                         .count();
 
                     double posPct = (double) positive / total * 100;
@@ -328,14 +357,14 @@ public class AdvancedAnalysisPanel extends JPanel {
                     dataset.addValue(posPct, "Positive", category.getDisplayName());
                     dataset.addValue(negPct, "Negative", category.getDisplayName());
 
-                    sb.append(String.format("%s: Pos %.0f%% | Neg %.0f%% (%d posts)\n",
+                    sb.append(String.format("%s: Pos %.0f%% | Neg %.0f%% (%d comments)\n",
                         category.getDisplayName(), posPct, negPct, total));
                     if (negPct > 50) sb.append("  ⚠️ CRITICAL\n");
                     else if (posPct > 60) sb.append("  ✅ SATISFIED\n");
                 });
 
                 JFreeChart chart = ChartFactory.createStackedBarChart(
-                    "Satisfaction by Category (Problem 1)",
+                    "Satisfaction by Category (Problem 1) - Comments",
                     "Category", "%", dataset
                 );
                 chartPanel1.setChart(chart);
@@ -365,33 +394,33 @@ public class AdvancedAnalysisPanel extends JPanel {
         JButton btn2 = new JButton("Refresh");
         btn2.addActionListener(e -> {
             try {
-                List<Post> posts = model.getPosts();
+                List<Comment> allComments = getAllCommentsFromDatabase();
                 DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
 
-                long pos = posts.stream().filter(p -> p.getSentiment() != null && p.getSentiment().isPositive()).count();
-                long neg = posts.stream().filter(p -> p.getSentiment() != null && p.getSentiment().isNegative()).count();
-                long neu = posts.size() - pos - neg;
+                long pos = allComments.stream().filter(c -> c.getSentiment() != null && c.getSentiment().isPositive()).count();
+                long neg = allComments.stream().filter(c -> c.getSentiment() != null && c.getSentiment().isNegative()).count();
+                long neu = allComments.size() - pos - neg;
 
                 dataset.setValue("Positive (" + pos + ")", pos);
                 dataset.setValue("Negative (" + neg + ")", neg);
                 dataset.setValue("Neutral (" + neu + ")", neu);
 
-                JFreeChart chart = ChartFactory.createPieChart("Sentiment Distribution", dataset);
+                JFreeChart chart = ChartFactory.createPieChart("Sentiment Distribution (Comments)", dataset);
                 pieChartPanel.setChart(chart);
                 InteractiveChartUtility.enableChartInteractivity(pieChartPanel);
 
-                StringBuilder sb = new StringBuilder("=== DETAILED PROBLEM 1 ANALYSIS ===\n\n");
-                Map<ReliefItem.Category, List<Post>> byCategory = posts.stream()
-                    .filter(p -> p.getReliefItem() != null)
-                    .collect(Collectors.groupingBy(p -> p.getReliefItem().getCategory()));
+                StringBuilder sb = new StringBuilder("=== DETAILED PROBLEM 1 ANALYSIS (Comments) ===\n\n");
+                Map<ReliefItem.Category, List<Comment>> byCategory = allComments.stream()
+                    .filter(c -> c.getReliefItem() != null)
+                    .collect(Collectors.groupingBy(c -> c.getReliefItem().getCategory()));
 
-                byCategory.forEach((category, categoryPosts) -> {
-                    sb.append(String.format("📦 %s (%d posts)\n", category.getDisplayName(), categoryPosts.size()));
-                    categoryPosts.forEach(post -> {
-                        String sentiment = post.getSentiment() != null ? post.getSentiment().getType().toString() : "N/A";
-                        double confidence = post.getSentiment() != null ? post.getSentiment().getConfidence() : 0.0;
+                byCategory.forEach((category, categoryComments) -> {
+                    sb.append(String.format("📦 %s (%d comments)\n", category.getDisplayName(), categoryComments.size()));
+                    categoryComments.forEach(comment -> {
+                        String sentiment = comment.getSentiment() != null ? comment.getSentiment().getType().toString() : "N/A";
+                        double confidence = comment.getSentiment() != null ? comment.getSentiment().getConfidence() : 0.0;
                         sb.append(String.format("   - %s: %s (%.2f)\n",
-                            post.getAuthor(),
+                            comment.getAuthor(),
                             sentiment,
                             confidence));
                     });
@@ -600,32 +629,32 @@ public class AdvancedAnalysisPanel extends JPanel {
         JButton btnTemporal = new JButton("Refresh");
         btnTemporal.addActionListener(e -> {
             try {
-                List<Post> posts = model.getPosts();
+                List<Comment> allComments = getAllCommentsFromDatabase();
                 DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-                StringBuilder sb = new StringBuilder("=== TEMPORAL SENTIMENT ANALYSIS (Problem 2) ===\n\n");
+                StringBuilder sb = new StringBuilder("=== TEMPORAL SENTIMENT ANALYSIS (Problem 2 - Comments) ===\n\n");
 
-                Map<String, List<Post>> byDate = posts.stream()
-                    .collect(Collectors.groupingBy(p -> p.getCreatedAt().toLocalDate().toString()));
+                Map<String, List<Comment>> byDate = allComments.stream()
+                    .collect(Collectors.groupingBy(c -> c.getCreatedAt().toLocalDate().toString()));
 
                 byDate.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
                     String date = entry.getKey();
-                    List<Post> datePosts = entry.getValue();
+                    List<Comment> dateComments = entry.getValue();
 
-                    long pos = datePosts.stream().filter(p -> p.getSentiment() != null && p.getSentiment().isPositive()).count();
-                    long neg = datePosts.stream().filter(p -> p.getSentiment() != null && p.getSentiment().isNegative()).count();
-                    long neu = datePosts.size() - pos - neg;
+                    long pos = dateComments.stream().filter(c -> c.getSentiment() != null && c.getSentiment().isPositive()).count();
+                    long neg = dateComments.stream().filter(c -> c.getSentiment() != null && c.getSentiment().isNegative()).count();
+                    long neu = dateComments.size() - pos - neg;
 
                     dataset.addValue(pos, "Positive", date);
                     dataset.addValue(neg, "Negative", date);
                     dataset.addValue(neu, "Neutral", date);
 
                     String trend = pos > neg ? "📈 IMPROVING" : (neg > pos ? "📉 DETERIORATING" : "→ STABLE");
-                    sb.append(String.format("%s: %s | Posts:%d | Pos:%d Neg:%d\n", date, trend, datePosts.size(), pos, neg));
+                    sb.append(String.format("%s: %s | Comments:%d | Pos:%d Neg:%d\n", date, trend, dateComments.size(), pos, neg));
                 });
 
                 JFreeChart chart = ChartFactory.createStackedBarChart(
-                    "Sentiment Over Time (Problem 2)",
-                    "Date", "Posts", dataset
+                    "Sentiment Over Time (Problem 2 - Comments)",
+                    "Date", "Comments", dataset
                 );
                 chartPanel.setChart(chart);
                 InteractiveChartUtility.enableChartInteractivity(chartPanel);
@@ -796,6 +825,22 @@ public class AdvancedAnalysisPanel extends JPanel {
 
     private String truncate(String s, int len) {
         return s.length() <= len ? s : s.substring(0, len) + "...";
+    }
+
+    private String getStackTrace(Exception ex) {
+        StringBuilder sb = new StringBuilder();
+        for (StackTraceElement element : ex.getStackTrace()) {
+            sb.append(element.toString()).append("\n");
+        }
+        return sb.toString();
+    }
+
+    private List<Comment> getAllCommentsFromDatabase() {
+        List<Comment> allComments = new ArrayList<>();
+        for (Post post : model.getPosts()) {
+            allComments.addAll(post.getComments());
+        }
+        return allComments;
     }
 
     private void analyzeAllPostsAction() {

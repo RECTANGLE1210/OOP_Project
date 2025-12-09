@@ -1,9 +1,20 @@
 package com.humanitarian.devui.database;
 
-import com.humanitarian.devui.model.*;
-import java.sql.*;
-import java.util.*;
 import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.humanitarian.devui.model.Comment;
+import com.humanitarian.devui.model.Post;
+import com.humanitarian.devui.model.ReliefItem;
+import com.humanitarian.devui.model.Sentiment;
+import com.humanitarian.devui.model.YouTubePost;
 
 public class DatabaseManager {
     private static DatabaseManager instance;
