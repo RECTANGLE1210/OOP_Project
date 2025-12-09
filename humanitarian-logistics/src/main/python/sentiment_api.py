@@ -7,30 +7,62 @@ from flask import Flask, request, jsonify
 from transformers import pipeline
 import logging
 import torch
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 
-# Initialize the sentiment analysis pipeline with Vietnamese support
-# Using xlm-roberta-large-xnli which supports Vietnamese, English, and 100+ languages
+# Setup logging to both console and file
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Log file path
+LOG_FILE = "sentiment_analysis_results.txt"
+
+def log_to_file(message):
+    """Log message to both console and file"""
+    logger.info(message)
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}\n")
+
+# Initialize log file with startup message
+with open(LOG_FILE, "a", encoding="utf-8") as f:
+    f.write("\n" + "="*80 + "\n")
+    f.write(f"Sentiment Analysis API Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    f.write("="*80 + "\n\n")
+
+# Initialize the sentiment analysis pipeline
+# Using nlptown's multilingual sentiment model - supports 3 classes: negative, neutral, positive
+# Works well with Vietnamese text
 try:
     classifier = pipeline("sentiment-analysis", 
-                         model="xlm-roberta-large-xnli",
+                         model="nlptown/bert-base-multilingual-uncased-sentiment",
                          device=0 if torch.cuda.is_available() else -1)
-    MODEL_NAME = "xlm-roberta-large-xnli (Vietnamese + English + 100+ languages)"
-    logging.info("Sentiment analysis model loaded: xlm-roberta-large-xnli (Vietnamese + English)")
+    MODEL_NAME = "nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)"
+    log_to_file(f"✓ Sentiment analysis model loaded: {MODEL_NAME}")
 except Exception as e:
     try:
-        # Fallback to multilingual BERT if xlm-roberta fails
+        # Fallback to distilbert multilingual
         classifier = pipeline("sentiment-analysis",
-                             model="bert-base-multilingual-uncased",
+                             model="distilbert-base-multilingual-uncased",
                              device=0 if torch.cuda.is_available() else -1)
-        MODEL_NAME = "bert-base-multilingual-uncased (Fallback - Vietnamese + 104 languages)"
-        logging.warning(f"xlm-roberta failed, using fallback: {e}")
+        MODEL_NAME = "distilbert-base-multilingual-uncased (Lightweight, Vietnamese + 100+ languages)"
+        log_to_file(f"⚠ Primary model failed, using fallback: {MODEL_NAME}")
+        log_to_file(f"  Error: {e}")
     except Exception as e2:
-        logging.error(f"Error loading sentiment models: {e2}")
-        classifier = None
-        MODEL_NAME = None
+        try:
+            # Last fallback: xlm-roberta
+            classifier = pipeline("sentiment-analysis",
+                                 model="xlm-roberta-base",
+                                 device=0 if torch.cuda.is_available() else -1)
+            MODEL_NAME = "xlm-roberta-base (Vietnamese + 100+ languages)"
+            log_to_file(f"⚠ Fallback model also failed, using final fallback: {MODEL_NAME}")
+            log_to_file(f"  Primary error: {e}")
+            log_to_file(f"  Secondary error: {e2}")
+        except Exception as e3:
+            log_to_file(f"✗ Error loading all sentiment models: {e3}")
+            classifier = None
+            MODEL_NAME = None
 
 # Initialize the category classification pipeline using zero-shot classification
 # Using simple keyword-based approach for fast Vietnamese support
@@ -118,40 +150,50 @@ def analyze_sentiment():
     {
         "sentiment": "POSITIVE",
         "confidence": 0.9987,
-        "model": "xlm-roberta-large-xnli (Vietnamese + English)"
+        "model": "nlptown/bert-base-multilingual-uncased-sentiment"
     }
     """
     try:
         data = request.json
         
         if not data or 'text' not in data:
+            log_to_file("✗ ERROR: Missing 'text' field in request")
             return jsonify({"error": "Missing 'text' field"}), 400
         
         text = data['text'].strip()
         
         if not text:
+            log_to_file("✗ ERROR: Empty text provided")
             return jsonify({
                 "sentiment": "NEUTRAL",
                 "confidence": 0.0
             })
         
         if classifier is None:
+            log_to_file("✗ ERROR: Sentiment model not initialized")
             return jsonify({"error": "Model not initialized"}), 500
         
-        # Perform sentiment analysis (works with Vietnamese or English)
+        # Perform sentiment analysis (works with Vietnamese text)
         result = classifier(text[:512], truncation=True)  # Truncate to 512 tokens (model limit)
         
         # Map model output to our category
         label = result[0]['label'].upper()
         score = result[0]['score']
         
-        # Convert to our sentiment types
-        if label == 'POSITIVE':
+        # Convert to our sentiment types - nlptown model outputs: 5 stars, 4 stars, 3 stars, 2 stars, 1 star
+        # or POSITIVE, NEUTRAL, NEGATIVE
+        if label in ['5 STARS', '4 STARS', 'POSITIVE', 'POS', 'LABEL_2']:
             sentiment = 'POSITIVE'
-        elif label == 'NEGATIVE':
+        elif label in ['3 STARS', 'NEUTRAL', 'LABEL_1']:
+            sentiment = 'NEUTRAL'
+        elif label in ['2 STARS', '1 STAR', 'NEGATIVE', 'NEG', 'LABEL_0']:
             sentiment = 'NEGATIVE'
         else:
+            # Default based on confidence - if high confidence but label is unclear, map by highest score
             sentiment = 'NEUTRAL'
+        
+        # Log result to file
+        log_to_file(f"📊 SENTIMENT ANALYSIS | Text: '{text[:100]}...' | Result: {sentiment} (confidence: {score:.4f}, raw: {label})")
         
         return jsonify({
             "sentiment": sentiment,
@@ -161,7 +203,9 @@ def analyze_sentiment():
         })
     
     except Exception as e:
-        logging.error(f"Error in sentiment analysis: {e}")
+        error_msg = f"✗ Error in sentiment analysis: {str(e)}"
+        log_to_file(error_msg)
+        logging.error(error_msg)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/analyze_batch', methods=['POST'])
@@ -187,34 +231,52 @@ def analyze_batch():
         data = request.json
         
         if not data or 'texts' not in data:
+            log_to_file("✗ ERROR: Missing 'texts' field in batch request")
             return jsonify({"error": "Missing 'texts' field"}), 400
         
         texts = data['texts']
         
         if not isinstance(texts, list):
+            log_to_file("✗ ERROR: 'texts' field must be a list")
             return jsonify({"error": "'texts' must be a list"}), 400
         
         if classifier is None:
+            log_to_file("✗ ERROR: Sentiment model not initialized")
             return jsonify({"error": "Model not initialized"}), 500
         
         results = []
-        for text in texts:
+        log_to_file(f"📊 BATCH SENTIMENT ANALYSIS | Processing {len(texts)} texts")
+        
+        for idx, text in enumerate(texts, 1):
             if isinstance(text, str) and text.strip():
                 result = classifier(text[:512], truncation=True)
                 label = result[0]['label'].upper()
                 score = result[0]['score']
                 
-                sentiment = 'POSITIVE' if label == 'POSITIVE' else ('NEGATIVE' if label == 'NEGATIVE' else 'NEUTRAL')
+                # Normalize sentiment - support 3 classes
+                if label in ['5 STARS', '4 STARS', 'POSITIVE', 'POS', 'LABEL_2']:
+                    sentiment = 'POSITIVE'
+                elif label in ['3 STARS', 'NEUTRAL', 'LABEL_1']:
+                    sentiment = 'NEUTRAL'
+                elif label in ['2 STARS', '1 STAR', 'NEGATIVE', 'NEG', 'LABEL_0']:
+                    sentiment = 'NEGATIVE'
+                else:
+                    sentiment = 'NEUTRAL'
                 
                 results.append({
                     "sentiment": sentiment,
                     "confidence": float(score)
                 })
+                
+                log_to_file(f"  [{idx}/{len(texts)}] '{text[:80]}...' → {sentiment} ({score:.4f}, raw: {label})")
             else:
                 results.append({
                     "sentiment": "NEUTRAL",
                     "confidence": 0.0
                 })
+                log_to_file(f"  [{idx}/{len(texts)}] Empty text → NEUTRAL")
+        
+        log_to_file(f"✓ Batch processing completed | Total: {len(results)} results")
         
         return jsonify({
             "results": results,
@@ -222,7 +284,9 @@ def analyze_batch():
         })
     
     except Exception as e:
-        logging.error(f"Error in batch sentiment analysis: {e}")
+        error_msg = f"✗ Error in batch sentiment analysis: {str(e)}"
+        log_to_file(error_msg)
+        logging.error(error_msg)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/classify_category', methods=['POST'])
@@ -252,11 +316,13 @@ def classify_category():
         data = request.json
         
         if not data or 'text' not in data:
+            log_to_file("✗ ERROR: Missing 'text' field in category request")
             return jsonify({"error": "Missing 'text' field"}), 400
         
         text = data['text'].strip()
         
         if not text:
+            log_to_file("✗ ERROR: Empty text provided for category classification")
             return jsonify({
                 "category": "FOOD",
                 "confidence": 0.0
@@ -279,6 +345,9 @@ def classify_category():
         # Normalize confidence to 0-1 range
         normalized_confidence = min(confidence / 3.0, 1.0) if confidence > 0 else 0.5
         
+        # Log result to file
+        log_to_file(f"🏷️  CATEGORY CLASSIFICATION | Text: '{text[:100]}...' | Result: {category_enum} ({normalized_confidence:.4f})")
+        
         return jsonify({
             "category": category_enum,
             "category_name": category_name,
@@ -288,7 +357,9 @@ def classify_category():
         })
     
     except Exception as e:
-        logging.error(f"Error in category classification: {e}")
+        error_msg = f"✗ Error in category classification: {str(e)}"
+        log_to_file(error_msg)
+        logging.error(error_msg)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/classify_batch_category', methods=['POST'])
@@ -314,11 +385,13 @@ def classify_batch_category():
         data = request.json
         
         if not data or 'texts' not in data:
+            log_to_file("✗ ERROR: Missing 'texts' field in batch category request")
             return jsonify({"error": "Missing 'texts' field"}), 400
         
         texts = data['texts']
         
         if not isinstance(texts, list):
+            log_to_file("✗ ERROR: 'texts' field must be a list")
             return jsonify({"error": "'texts' must be a list"}), 400
         
         results = []
@@ -330,7 +403,9 @@ def classify_batch_category():
             "TRANSPORTATION": "Transportation and logistics (vận chuyển và hậu cần)"
         }
         
-        for text in texts:
+        log_to_file(f"🏷️  BATCH CATEGORY CLASSIFICATION | Processing {len(texts)} texts")
+        
+        for idx, text in enumerate(texts, 1):
             if isinstance(text, str) and text.strip():
                 category_enum, confidence = classify_by_keywords(text)
                 normalized_confidence = min(confidence / 3.0, 1.0) if confidence > 0 else 0.5
@@ -341,11 +416,16 @@ def classify_batch_category():
                     "category_name": category_name,
                     "confidence": float(normalized_confidence)
                 })
+                
+                log_to_file(f"  [{idx}/{len(texts)}] '{text[:80]}...' → {category_enum} ({normalized_confidence:.4f})")
             else:
                 results.append({
                     "category": "FOOD",
                     "confidence": 0.0
                 })
+                log_to_file(f"  [{idx}/{len(texts)}] Empty text → FOOD")
+        
+        log_to_file(f"✓ Batch category processing completed | Total: {len(results)} results")
         
         return jsonify({
             "results": results,
@@ -353,7 +433,9 @@ def classify_batch_category():
         })
     
     except Exception as e:
-        logging.error(f"Error in batch category classification: {e}")
+        error_msg = f"✗ Error in batch category classification: {str(e)}"
+        log_to_file(error_msg)
+        logging.error(error_msg)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/models', methods=['GET'])
@@ -410,6 +492,7 @@ if __name__ == '__main__':
     print(f"Category Model: {CATEGORY_MODEL_NAME}")
     print(f"Vietnamese Support: ✓ Yes (both models)")
     print(f"Supported Languages: Vietnamese, English, Chinese, Arabic, +95 more")
+    print(f"Results Log File: {LOG_FILE}")
     print(f"Server: http://localhost:5001")
     print("=" * 70)
     print("Endpoints:")

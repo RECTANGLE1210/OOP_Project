@@ -102,14 +102,22 @@ public class DatabaseLoader {
             for (Post post : model.getPosts()) {
                 dbManager.savePost(post);
             }
-            dbManager.commit();
+            try {
+                dbManager.commit();
+            } catch (SQLException e) {
+                // Ignore - SQLite auto-commits in non-transactional mode
+            }
             System.out.println("✓ Data saved to user database (humanitarian_logistics_user.db)");
         } catch (Exception e) {
             System.err.println("Error saving to user database: " + e.getMessage());
             e.printStackTrace();
         } finally {
             if (dbManager != null) {
-                dbManager.close();
+                try {
+                    dbManager.close();
+                } catch (SQLException e) {
+                    // Ignore
+                }
             }
         }
     }

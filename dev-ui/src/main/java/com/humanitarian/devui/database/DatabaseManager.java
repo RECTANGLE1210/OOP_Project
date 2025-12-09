@@ -327,6 +327,57 @@ public class DatabaseManager {
         }
     }
 
+    /**
+     * Load all comments directly from database with sentiment and category data
+     * This bypasses the model and reads directly from DB
+     */
+    public java.util.List<Comment> getAllCommentsFromDatabase() throws SQLException, ClassNotFoundException {
+        ensureConnection();
+        java.util.List<Comment> comments = new java.util.ArrayList<>();
+        String sql = "SELECT comment_id, post_id, content, author, created_at, sentiment, confidence, relief_category FROM comments";
+        
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String commentId = rs.getString("comment_id");
+                String postId = rs.getString("post_id");
+                String content = rs.getString("content");
+                String author = rs.getString("author");
+                java.time.LocalDateTime createdAt = java.time.LocalDateTime.parse(rs.getString("created_at"));
+                
+                Comment comment = new Comment(commentId, postId, content, createdAt, author);
+                
+                // Load sentiment
+                String sentimentStr = rs.getString("sentiment");
+                if (sentimentStr != null && !sentimentStr.isEmpty()) {
+                    try {
+                        Sentiment.SentimentType type = Sentiment.SentimentType.valueOf(sentimentStr);
+                        double confidence = rs.getDouble("confidence");
+                        comment.setSentiment(new Sentiment(type, confidence, content));
+                    } catch (IllegalArgumentException | SQLException e) {
+                        // Skip if invalid sentiment data
+                    }
+                }
+                
+                // Load relief category
+                String categoryStr = rs.getString("relief_category");
+                if (categoryStr != null && !categoryStr.isEmpty()) {
+                    try {
+                        ReliefItem.Category category = ReliefItem.Category.valueOf(categoryStr);
+                        comment.setReliefItem(new ReliefItem(category, "Database loaded", 3));
+                    } catch (IllegalArgumentException e) {
+                        // Skip if invalid category
+                    }
+                }
+                
+                comments.add(comment);
+            }
+        }
+        
+        System.out.println("DEBUG: Loaded " + comments.size() + " comments from database");
+        return comments;
+    }
+
     public void close() {
         if (connection != null) {
             try {

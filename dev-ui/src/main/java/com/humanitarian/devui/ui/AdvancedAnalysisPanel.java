@@ -83,6 +83,16 @@ public class AdvancedAnalysisPanel extends JPanel {
         }
         selectorPanel.add(categorySelector);
         
+        // Chart type selector
+        selectorPanel.add(new JLabel("  |  Chart Type: "));
+        javax.swing.JRadioButton barChartBtn = new javax.swing.JRadioButton("Bar Chart", true);
+        javax.swing.JRadioButton pieChartBtn = new javax.swing.JRadioButton("Pie Chart");
+        javax.swing.ButtonGroup chartTypeGroup = new javax.swing.ButtonGroup();
+        chartTypeGroup.add(barChartBtn);
+        chartTypeGroup.add(pieChartBtn);
+        selectorPanel.add(barChartBtn);
+        selectorPanel.add(pieChartBtn);
+        
         ChartPanel chartPanel0 = new ChartPanel(null);
         chartPanel0.setPreferredSize(new Dimension(800, 350));
         InteractiveChartUtility.makeChartInteractive(chartPanel0);
@@ -90,6 +100,9 @@ public class AdvancedAnalysisPanel extends JPanel {
         JTextArea textArea0 = new JTextArea(8, 50);
         textArea0.setEditable(false);
         textArea0.setFont(new Font("Monospaced", Font.PLAIN, 9));
+        
+        // Store current data for chart type switching
+        final java.util.Map<String, Object> currentData = new java.util.HashMap<>();
         
         JButton btnAnalyzeCategory = new JButton("Analyze");
         btnAnalyzeCategory.addActionListener(e -> {
@@ -99,7 +112,8 @@ public class AdvancedAnalysisPanel extends JPanel {
                 StringBuilder sb = new StringBuilder();
                 sb.append("=== SATISFACTION ANALYSIS (Comments): ").append(selectedCategory).append(" ===\n\n");
                 
-                DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+                DefaultCategoryDataset barDataset = new DefaultCategoryDataset();
+                DefaultPieDataset<String> pieDataset = new DefaultPieDataset<>();
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 
                 // Debug info
@@ -144,9 +158,9 @@ public class AdvancedAnalysisPanel extends JPanel {
                         double neuPct = (double) neutral / total * 100;
                         double satisfactionScore = (positive - negative) / (double) total;
                         
-                        dataset.addValue(posPct, "Positive", category.getDisplayName());
-                        dataset.addValue(negPct, "Negative", category.getDisplayName());
-                        dataset.addValue(neuPct, "Neutral", category.getDisplayName());
+                        barDataset.addValue(posPct, "Positive", category.getDisplayName());
+                        barDataset.addValue(negPct, "Negative", category.getDisplayName());
+                        barDataset.addValue(neuPct, "Neutral", category.getDisplayName());
                         
                         sb.append(String.format("📦 %s (Total: %d comments)\n", category.getDisplayName(), total));
                         sb.append(String.format("   Positive: %d (%.1f%%)\n", positive, posPct));
@@ -160,9 +174,15 @@ public class AdvancedAnalysisPanel extends JPanel {
                         sb.append("\n");
                     });
                     
+                    barChartBtn.setEnabled(true);
+                    pieChartBtn.setEnabled(false);
+                    barChartBtn.setSelected(true);
+                    currentData.put("dataset", barDataset);
+                    currentData.put("chartType", "bar");
+                    
                     JFreeChart chart = ChartFactory.createStackedBarChart(
                         "Satisfaction Analysis - All Categories (Comments)",
-                        "Relief Category", "Percentage (%)", dataset
+                        "Relief Category", "Percentage (%)", barDataset
                     );
                     chartPanel0.setChart(chart);
                 } else {
@@ -197,14 +217,29 @@ public class AdvancedAnalysisPanel extends JPanel {
                         double neuPct = total > 0 ? (double) neutral / total * 100 : 0;
                         double satisfactionScore = total > 0 ? (positive - negative) / (double) total : 0;
                         
-                        DefaultPieDataset<String> pieDataset = new DefaultPieDataset<>();
+                        // Create both datasets
+                        DefaultCategoryDataset barDatasetSingle = new DefaultCategoryDataset();
+                        barDatasetSingle.addValue(posPct, "Sentiment", "Positive");
+                        barDatasetSingle.addValue(negPct, "Sentiment", "Negative");
+                        barDatasetSingle.addValue(neuPct, "Sentiment", "Neutral");
+                        
                         pieDataset.setValue("Positive (" + positive + ")", posPct);
                         pieDataset.setValue("Negative (" + negative + ")", negPct);
                         pieDataset.setValue("Neutral (" + neutral + ")", neuPct);
                         
-                        JFreeChart chart = ChartFactory.createPieChart(
-                            "Sentiment Distribution: " + selectedCategory + " (Comments)", pieDataset
-                        );
+                        // Store data for chart switching
+                        currentData.put("barDataset", barDatasetSingle);
+                        currentData.put("pieDataset", pieDataset);
+                        currentData.put("chartType", barChartBtn.isSelected() ? "bar" : "pie");
+                        
+                        // Enable both chart type options
+                        barChartBtn.setEnabled(true);
+                        pieChartBtn.setEnabled(true);
+                        barChartBtn.setSelected(true);
+                        
+                        JFreeChart chart = barChartBtn.isSelected() ? 
+                            ChartFactory.createBarChart("Sentiment Distribution: " + selectedCategory + " (Comments)", "Sentiment", "Percentage (%)", barDatasetSingle) :
+                            ChartFactory.createPieChart("Sentiment Distribution: " + selectedCategory + " (Comments)", pieDataset);
                         chartPanel0.setChart(chart);
                         
                         sb.append(String.format("📊 Detailed Analysis for: %s\n\n", selectedCategory));
@@ -261,8 +296,47 @@ public class AdvancedAnalysisPanel extends JPanel {
             }
         });
         
+        // Add chart type switching listener
+        barChartBtn.addActionListener(e -> {
+            if (barChartBtn.isSelected() && currentData.containsKey("barDataset")) {
+                JFreeChart chart = ChartFactory.createBarChart(
+                    "Sentiment Distribution by Chart Type",
+                    "Sentiment", "Percentage (%)",
+                    (DefaultCategoryDataset) currentData.get("barDataset")
+                );
+                chartPanel0.setChart(chart);
+                InteractiveChartUtility.enableChartInteractivity(chartPanel0);
+                currentData.put("chartType", "bar");
+            } else if (barChartBtn.isSelected() && currentData.containsKey("dataset")) {
+                JFreeChart chart = ChartFactory.createStackedBarChart(
+                    "Satisfaction Analysis - All Categories (Comments)",
+                    "Relief Category", "Percentage (%)",
+                    (DefaultCategoryDataset) currentData.get("dataset")
+                );
+                chartPanel0.setChart(chart);
+                InteractiveChartUtility.enableChartInteractivity(chartPanel0);
+                currentData.put("chartType", "bar");
+            }
+        });
+        
+        pieChartBtn.addActionListener(e -> {
+            if (pieChartBtn.isSelected() && currentData.containsKey("pieDataset")) {
+                JFreeChart chart = ChartFactory.createPieChart(
+                    "Sentiment Distribution by Chart Type",
+                    (DefaultPieDataset<?>) currentData.get("pieDataset")
+                );
+                chartPanel0.setChart(chart);
+                InteractiveChartUtility.enableChartInteractivity(chartPanel0);
+                currentData.put("chartType", "pie");
+            }
+        });
+        
         JPanel buttonPanel0 = new JPanel();
         buttonPanel0.add(btnAnalyzeCategory);
+        
+        // Add auto-refresh listeners
+        disasterSelector.addActionListener(e -> btnAnalyzeCategory.doClick());
+        categorySelector.addActionListener(e -> btnAnalyzeCategory.doClick());
         
         individualCategoryPanel.add(selectorPanel, BorderLayout.NORTH);
         individualCategoryPanel.add(chartPanel0, BorderLayout.CENTER);
@@ -440,14 +514,23 @@ public class AdvancedAnalysisPanel extends JPanel {
                 String selectedDisaster = (String) disasterSelector2.getSelectedItem();
                 String selectedCategory = (String) categorySelector2.getSelectedItem();
                 
-                List<Post> posts = model.getPosts();
+                // Load comments directly from database
+                List<Comment> allComments = getAllCommentsFromDatabase();
+                
+                // Filter by disaster if needed
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
-                    posts = posts.stream()
-                        .filter(p -> {
-                            if (p instanceof YouTubePost) {
-                                YouTubePost ytPost = (YouTubePost) p;
-                                DisasterType type = ytPost.getDisasterType();
-                                return type != null && type.getName().equals(selectedDisaster);
+                    final String disasterName = selectedDisaster;
+                    allComments = allComments.stream()
+                        .filter(c -> {
+                            // Find post that contains this comment
+                            for (Post post : model.getPosts()) {
+                                if (post.getComments().contains(c)) {
+                                    if (post instanceof YouTubePost) {
+                                        YouTubePost ytPost = (YouTubePost) post;
+                                        DisasterType type = ytPost.getDisasterType();
+                                        return type != null && type.getName().equals(disasterName);
+                                    }
+                                }
                             }
                             return false;
                         })
@@ -471,34 +554,34 @@ public class AdvancedAnalysisPanel extends JPanel {
                 
                 final ReliefItem.Category finalCategory = targetCategory;
                 
-                List<Post> filteredPosts = posts.stream()
-                    .filter(p -> finalCategory == null || (p.getReliefItem() != null && p.getReliefItem().getCategory() == finalCategory))
+                List<Comment> filteredComments = allComments.stream()
+                    .filter(c -> finalCategory == null || (c.getReliefItem() != null && c.getReliefItem().getCategory() == finalCategory))
                     .collect(Collectors.toList());
                 
-                if (filteredPosts.isEmpty()) {
+                if (filteredComments.isEmpty()) {
                     sb.append("No data available for selected category");
                     textArea2.setText(sb.toString());
                     return;
                 }
                 
-                Map<String, List<Post>> byDate = filteredPosts.stream()
-                    .collect(Collectors.groupingBy(p -> p.getCreatedAt().toLocalDate().toString()));
+                Map<String, List<Comment>> byDate = filteredComments.stream()
+                    .collect(Collectors.groupingBy(c -> c.getCreatedAt().toLocalDate().toString()));
                 
                 byDate.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> {
                     String date = entry.getKey();
-                    List<Post> datePosts = entry.getValue();
+                    List<Comment> dateComments = entry.getValue();
                     
-                    long pos = datePosts.stream()
-                        .filter(p -> p.getSentiment() != null && p.getSentiment().isPositive())
+                    long pos = dateComments.stream()
+                        .filter(c -> c.getSentiment() != null && c.getSentiment().isPositive())
                         .count();
-                    long neg = datePosts.stream()
-                        .filter(p -> p.getSentiment() != null && p.getSentiment().isNegative())
+                    long neg = dateComments.stream()
+                        .filter(c -> c.getSentiment() != null && c.getSentiment().isNegative())
                         .count();
-                    long neu = datePosts.size() - pos - neg;
+                    long neu = dateComments.size() - pos - neg;
                     
-                    double posPct = (double) pos / datePosts.size() * 100;
-                    double negPct = (double) neg / datePosts.size() * 100;
-                    double neuPct = (double) neu / datePosts.size() * 100;
+                    double posPct = dateComments.isEmpty() ? 0 : (double) pos / dateComments.size() * 100;
+                    double negPct = dateComments.isEmpty() ? 0 : (double) neg / dateComments.size() * 100;
+                    double neuPct = dateComments.isEmpty() ? 0 : (double) neu / dateComments.size() * 100;
                     
                     dataset.addValue(posPct, "Positive", date);
                     dataset.addValue(negPct, "Negative", date);
@@ -507,7 +590,7 @@ public class AdvancedAnalysisPanel extends JPanel {
                     String trend = pos > neg ? "📈 IMPROVING" : (neg > pos ? "📉 DETERIORATING" : "→ STABLE");
                     sb.append(String.format("%s: %s\n", date, trend));
                     sb.append(String.format("   Total: %d | Positive: %d (%.1f%%) | Negative: %d (%.1f%%)\n", 
-                        datePosts.size(), pos, posPct, neg, negPct));
+                        dateComments.size(), pos, posPct, neg, negPct));
                 });
                 
                 JFreeChart chart = ChartFactory.createStackedBarChart(
@@ -517,17 +600,20 @@ public class AdvancedAnalysisPanel extends JPanel {
                 chartPanel2.setChart(chart);
                 
                 sb.append("\n=== TREND ANALYSIS ===\n");
-                List<Map.Entry<String, List<Post>>> sortedEntries = new ArrayList<>(byDate.entrySet());
+                List<Map.Entry<String, List<Comment>>> sortedEntries = new ArrayList<>(byDate.entrySet());
                 sortedEntries.sort(Map.Entry.comparingByKey());
                 
                 if (sortedEntries.size() >= 2) {
-                    double firstPosPct = (double) sortedEntries.get(0).getValue().stream()
-                        .filter(p -> p.getSentiment() != null && p.getSentiment().isPositive())
-                        .count() / sortedEntries.get(0).getValue().size() * 100;
+                    List<Comment> firstDateComments = sortedEntries.get(0).getValue();
+                    List<Comment> lastDateComments = sortedEntries.get(sortedEntries.size() - 1).getValue();
                     
-                    double lastPosPct = (double) sortedEntries.get(sortedEntries.size() - 1).getValue().stream()
-                        .filter(p -> p.getSentiment() != null && p.getSentiment().isPositive())
-                        .count() / sortedEntries.get(sortedEntries.size() - 1).getValue().size() * 100;
+                    double firstPosPct = firstDateComments.isEmpty() ? 0 : (double) firstDateComments.stream()
+                        .filter(c -> c.getSentiment() != null && c.getSentiment().isPositive())
+                        .count() / firstDateComments.size() * 100;
+                    
+                    double lastPosPct = lastDateComments.isEmpty() ? 0 : (double) lastDateComments.stream()
+                        .filter(c -> c.getSentiment() != null && c.getSentiment().isPositive())
+                        .count() / lastDateComments.size() * 100;
                     
                     double change = lastPosPct - firstPosPct;
                     
@@ -790,8 +876,18 @@ public class AdvancedAnalysisPanel extends JPanel {
 
     private List<Comment> getAllCommentsFromDatabase() {
         List<Comment> allComments = new ArrayList<>();
-        for (Post post : model.getPosts()) {
-            allComments.addAll(post.getComments());
+        try {
+            // Try to load directly from database first
+            com.humanitarian.devui.database.DatabaseManager dbManager = com.humanitarian.devui.database.DatabaseManager.getInstance();
+            allComments = dbManager.getAllCommentsFromDatabase();
+            System.out.println("DEBUG: Loaded " + allComments.size() + " comments from database");
+        } catch (Exception e) {
+            System.err.println("WARNING: Could not load from database, falling back to model: " + e.getMessage());
+            // Fallback to model if database fails
+            for (Post post : model.getPosts()) {
+                allComments.addAll(post.getComments());
+            }
+            System.out.println("DEBUG: Loaded " + allComments.size() + " comments from model (fallback)");
         }
         return allComments;
     }

@@ -1,0 +1,110 @@
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-09 23:21:10
+================================================================================
+
+[2025-12-09 23:21:11] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (Vietnamese + 6 languages, Proper Sentiment Analysis)
+[2025-12-09 23:23:09] 📊 SENTIMENT ANALYSIS | Text: 'Khủng khiếp khi Mẹ Thiên Nhiên nổi giận . Thương lắm đồng bào ơi ! Ai xem cũng nghẹn ngào tuôn rơi n...' | Result: NEUTRAL (confidence: 0.4396)
+[2025-12-09 23:23:09] 📊 SENTIMENT ANALYSIS | Text: 'Bão yagi công nhận công phá mạnh thật😁😁😁😁😁😁😄😄😄😄😄...' | Result: NEUTRAL (confidence: 0.3067)
+[2025-12-09 23:23:09] 📊 SENTIMENT ANALYSIS | Text: 'ở thời đỉnh cao tên tuổi của Trương Quốc Vinh còn xếp trên cả tứ Đại Thiên Hongkong, Trương Quốc Vin...' | Result: NEUTRAL (confidence: 0.3723)
+[2025-12-09 23:23:09] 📊 SENTIMENT ANALYSIS | Text: 'Bài phân tích rất logic nguyên nhân quyên sinh của Trình Điệp Y. Sống vì kinh kịch, nổi danh vì kinh...' | Result: NEUTRAL (confidence: 0.2951)
+[2025-12-09 23:23:09] 📊 SENTIMENT ANALYSIS | Text: 'Trần Khải Ca là đạo diễn tài ba vì ông dám đưa những cái mặt tối của xã hội Trung Quốc vào phim một ...' | Result: NEUTRAL (confidence: 0.3267)
+[2025-12-09 23:23:09] 📊 SENTIMENT ANALYSIS | Text: 'clip hay quá. Bài viết thật sâu sắc, giọng đọc truyền cảm. Mình xem phim này cách đây 6-7 năm. Mà đế...' | Result: NEUTRAL (confidence: 0.4880)
+[2025-12-09 23:23:09] 📊 SENTIMENT ANALYSIS | Text: 'Cuộc đời trương quốc vinh cũng buồn như vai diễn . 
+Năm mười sáu tuổi tôi bước vào tu viện 
+Mái tóc ...' | Result: NEUTRAL (confidence: 0.4110)
+[2025-12-09 23:23:09] 📊 SENTIMENT ANALYSIS | Text: 'Mình không cần phải là một nhà phê phim hay một mọt điện ảnh. Cũng biết Bá Vương Biệt Cơ là bộ phim ...' | Result: NEUTRAL (confidence: 0.3279)
+[2025-12-09 23:23:09] 📊 SENTIMENT ANALYSIS | Text: 'mỗi năm vào ngày 1/4 tôi sẽ chọn xem một 1 bộ film của Caca để biết rằng thế giới chúng ta may mắn c...' | Result: NEUTRAL (confidence: 0.3273)
+[2025-12-09 23:23:09] 📊 SENTIMENT ANALYSIS | Text: 'Theo mình nghĩ, những người Trung đã sống trong thời kỳ cách mạng văn hóa mới cảm nhận hết cái hay c...' | Result: NEUTRAL (confidence: 0.2947)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'Tôi năm nay 23t khi Trương Quốc Vinh mất tôi chỉ mới 3 tuổi nhưng tuổi thơ tôi lớn lên thì được xem ...' | Result: NEUTRAL (confidence: 0.3868)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'Để có được vài tiếng ngắn ngủi tỏ sáng trên sân khấu, người nhập vai đã phải trải qua quá trình rèn ...' | Result: NEUTRAL (confidence: 0.3614)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'phim nay mình xem lúc nhỏ chả hiểu gì, chỉ có lúc mà mình có tìm hiểu về lịch sử Trung Quốc đặc biệt...' | Result: NEUTRAL (confidence: 0.3424)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'Có 2 phim có ấn tượng khủng khiếp (tích cực) với mình. Mộ đom đóm mình không dám xem vì buồn quá. Cò...' | Result: NEUTRAL (confidence: 0.2810)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'Thích Trương Quốc Vinh và Mai Diễm Phương trong Yên Chi Khâu ......' | Result: NEUTRAL (confidence: 0.4163)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'Mỗi lần xem lại thương nhớ ca ca vô cùng. Kính trọng bác Trần Khải Ca mà tự nhiên có thiện cảm với c...' | Result: NEUTRAL (confidence: 0.4331)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'Khâm phục dv Trương Quốc Vinh thật sự. Mình chỉ coi phim thôi mà còn thấy u uất trầm cảm rồi, người ...' | Result: NEUTRAL (confidence: 0.3874)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'Tôi nghe bài bình của bạn cả trăm lần không thấy chán. Có phải bạn sinh ra để đọc bài bình luận này?...' | Result: NEUTRAL (confidence: 0.4230)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'mong kênh sẽ làm về những thể loại này nhiều hơn, mình thật sự rất thích những bộ điện ảnh có tính v...' | Result: NEUTRAL (confidence: 0.4079)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'mỗi lần xem lại bộ phim này lại có thêm những xúc cảm mới, duy chỉ có cảm xúc bức bối là lần nào xem...' | Result: NEUTRAL (confidence: 0.3109)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'Rất thích những bộ phim chính kịch của TQ. Những đạo diễn như Trương Nghệ Mưu, Trần Khải Ca...diễn v...' | Result: NEUTRAL (confidence: 0.4758)
+[2025-12-09 23:23:10] 📊 SENTIMENT ANALYSIS | Text: 'Phim này mỗi năm mình xem lại đều thức tỉnh ngộ ra 1 điều mới, 1 tầng ý nghĩa...' | Result: NEUTRAL (confidence: 0.4739)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-09 23:25:29
+================================================================================
+
+[2025-12-09 23:25:50] ⚠ Primary model failed, using fallback: vinai/phobert-base (Vietnamese BERT)
+[2025-12-09 23:25:50]   Error: nreimers/MiniLMv2-L6-H384-uncased is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'
+If this is a private repository, make sure to pass a token having permission to this repo either by logging in with `huggingface-cli login` or by passing `token=<your_token>`
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Khủng khiếp khi Mẹ Thiên Nhiên nổi giận . Thương lắm đồng bào ơi ! Ai xem cũng nghẹn ngào tuôn rơi n...' | Result: POSITIVE (confidence: 0.5594, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Bão yagi công nhận công phá mạnh thật😁😁😁😁😁😁😄😄😄😄😄...' | Result: NEGATIVE (confidence: 0.5106, raw: LABEL_0)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'ở thời đỉnh cao tên tuổi của Trương Quốc Vinh còn xếp trên cả tứ Đại Thiên Hongkong, Trương Quốc Vin...' | Result: POSITIVE (confidence: 0.5141, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Bài phân tích rất logic nguyên nhân quyên sinh của Trình Điệp Y. Sống vì kinh kịch, nổi danh vì kinh...' | Result: POSITIVE (confidence: 0.5375, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Trần Khải Ca là đạo diễn tài ba vì ông dám đưa những cái mặt tối của xã hội Trung Quốc vào phim một ...' | Result: NEGATIVE (confidence: 0.5348, raw: LABEL_0)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'clip hay quá. Bài viết thật sâu sắc, giọng đọc truyền cảm. Mình xem phim này cách đây 6-7 năm. Mà đế...' | Result: POSITIVE (confidence: 0.5192, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Cuộc đời trương quốc vinh cũng buồn như vai diễn . 
+Năm mười sáu tuổi tôi bước vào tu viện 
+Mái tóc ...' | Result: POSITIVE (confidence: 0.5648, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Mình không cần phải là một nhà phê phim hay một mọt điện ảnh. Cũng biết Bá Vương Biệt Cơ là bộ phim ...' | Result: POSITIVE (confidence: 0.5237, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'mỗi năm vào ngày 1/4 tôi sẽ chọn xem một 1 bộ film của Caca để biết rằng thế giới chúng ta may mắn c...' | Result: POSITIVE (confidence: 0.5590, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Theo mình nghĩ, những người Trung đã sống trong thời kỳ cách mạng văn hóa mới cảm nhận hết cái hay c...' | Result: POSITIVE (confidence: 0.5390, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Tôi năm nay 23t khi Trương Quốc Vinh mất tôi chỉ mới 3 tuổi nhưng tuổi thơ tôi lớn lên thì được xem ...' | Result: POSITIVE (confidence: 0.5530, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Để có được vài tiếng ngắn ngủi tỏ sáng trên sân khấu, người nhập vai đã phải trải qua quá trình rèn ...' | Result: NEGATIVE (confidence: 0.5135, raw: LABEL_0)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'phim nay mình xem lúc nhỏ chả hiểu gì, chỉ có lúc mà mình có tìm hiểu về lịch sử Trung Quốc đặc biệt...' | Result: POSITIVE (confidence: 0.5168, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Có 2 phim có ấn tượng khủng khiếp (tích cực) với mình. Mộ đom đóm mình không dám xem vì buồn quá. Cò...' | Result: POSITIVE (confidence: 0.5196, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Thích Trương Quốc Vinh và Mai Diễm Phương trong Yên Chi Khâu ......' | Result: POSITIVE (confidence: 0.5617, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Mỗi lần xem lại thương nhớ ca ca vô cùng. Kính trọng bác Trần Khải Ca mà tự nhiên có thiện cảm với c...' | Result: POSITIVE (confidence: 0.5418, raw: LABEL_1)
+[2025-12-09 23:26:20] 📊 SENTIMENT ANALYSIS | Text: 'Khâm phục dv Trương Quốc Vinh thật sự. Mình chỉ coi phim thôi mà còn thấy u uất trầm cảm rồi, người ...' | Result: POSITIVE (confidence: 0.5548, raw: LABEL_1)
+[2025-12-09 23:26:21] 📊 SENTIMENT ANALYSIS | Text: 'Tôi nghe bài bình của bạn cả trăm lần không thấy chán. Có phải bạn sinh ra để đọc bài bình luận này?...' | Result: POSITIVE (confidence: 0.5287, raw: LABEL_1)
+[2025-12-09 23:26:21] 📊 SENTIMENT ANALYSIS | Text: 'mong kênh sẽ làm về những thể loại này nhiều hơn, mình thật sự rất thích những bộ điện ảnh có tính v...' | Result: NEGATIVE (confidence: 0.5011, raw: LABEL_0)
+[2025-12-09 23:26:21] 📊 SENTIMENT ANALYSIS | Text: 'mỗi lần xem lại bộ phim này lại có thêm những xúc cảm mới, duy chỉ có cảm xúc bức bối là lần nào xem...' | Result: POSITIVE (confidence: 0.5298, raw: LABEL_1)
+[2025-12-09 23:26:21] 📊 SENTIMENT ANALYSIS | Text: 'Rất thích những bộ phim chính kịch của TQ. Những đạo diễn như Trương Nghệ Mưu, Trần Khải Ca...diễn v...' | Result: POSITIVE (confidence: 0.5330, raw: LABEL_1)
+[2025-12-09 23:26:21] 📊 SENTIMENT ANALYSIS | Text: 'Phim này mỗi năm mình xem lại đều thức tỉnh ngộ ra 1 điều mới, 1 tầng ý nghĩa...' | Result: POSITIVE (confidence: 0.5110, raw: LABEL_1)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-09 23:33:20
+================================================================================
+
+[2025-12-09 23:33:21] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+[2025-12-09 23:35:14] 📊 SENTIMENT ANALYSIS | Text: 'Khủng khiếp khi Mẹ Thiên Nhiên nổi giận . Thương lắm đồng bào ơi ! Ai xem cũng nghẹn ngào tuôn rơi n...' | Result: NEGATIVE (confidence: 0.4396, raw: 1 STAR)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Bão yagi công nhận công phá mạnh thật😁😁😁😁😁😁😄😄😄😄😄...' | Result: POSITIVE (confidence: 0.3067, raw: 5 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'ở thời đỉnh cao tên tuổi của Trương Quốc Vinh còn xếp trên cả tứ Đại Thiên Hongkong, Trương Quốc Vin...' | Result: POSITIVE (confidence: 0.3723, raw: 5 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Bài phân tích rất logic nguyên nhân quyên sinh của Trình Điệp Y. Sống vì kinh kịch, nổi danh vì kinh...' | Result: NEUTRAL (confidence: 0.2951, raw: 3 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Trần Khải Ca là đạo diễn tài ba vì ông dám đưa những cái mặt tối của xã hội Trung Quốc vào phim một ...' | Result: NEUTRAL (confidence: 0.3267, raw: 3 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'clip hay quá. Bài viết thật sâu sắc, giọng đọc truyền cảm. Mình xem phim này cách đây 6-7 năm. Mà đế...' | Result: NEGATIVE (confidence: 0.4880, raw: 2 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Cuộc đời trương quốc vinh cũng buồn như vai diễn . 
+Năm mười sáu tuổi tôi bước vào tu viện 
+Mái tóc ...' | Result: NEUTRAL (confidence: 0.4110, raw: 3 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Mình không cần phải là một nhà phê phim hay một mọt điện ảnh. Cũng biết Bá Vương Biệt Cơ là bộ phim ...' | Result: NEGATIVE (confidence: 0.3279, raw: 2 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'mỗi năm vào ngày 1/4 tôi sẽ chọn xem một 1 bộ film của Caca để biết rằng thế giới chúng ta may mắn c...' | Result: POSITIVE (confidence: 0.3273, raw: 5 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Theo mình nghĩ, những người Trung đã sống trong thời kỳ cách mạng văn hóa mới cảm nhận hết cái hay c...' | Result: NEGATIVE (confidence: 0.2947, raw: 2 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Tôi năm nay 23t khi Trương Quốc Vinh mất tôi chỉ mới 3 tuổi nhưng tuổi thơ tôi lớn lên thì được xem ...' | Result: NEGATIVE (confidence: 0.3868, raw: 2 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Để có được vài tiếng ngắn ngủi tỏ sáng trên sân khấu, người nhập vai đã phải trải qua quá trình rèn ...' | Result: NEUTRAL (confidence: 0.3614, raw: 3 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'phim nay mình xem lúc nhỏ chả hiểu gì, chỉ có lúc mà mình có tìm hiểu về lịch sử Trung Quốc đặc biệt...' | Result: POSITIVE (confidence: 0.3424, raw: 4 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Có 2 phim có ấn tượng khủng khiếp (tích cực) với mình. Mộ đom đóm mình không dám xem vì buồn quá. Cò...' | Result: NEUTRAL (confidence: 0.2810, raw: 3 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Thích Trương Quốc Vinh và Mai Diễm Phương trong Yên Chi Khâu ......' | Result: POSITIVE (confidence: 0.4163, raw: 5 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Mỗi lần xem lại thương nhớ ca ca vô cùng. Kính trọng bác Trần Khải Ca mà tự nhiên có thiện cảm với c...' | Result: POSITIVE (confidence: 0.4331, raw: 4 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Khâm phục dv Trương Quốc Vinh thật sự. Mình chỉ coi phim thôi mà còn thấy u uất trầm cảm rồi, người ...' | Result: NEGATIVE (confidence: 0.3874, raw: 2 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Tôi nghe bài bình của bạn cả trăm lần không thấy chán. Có phải bạn sinh ra để đọc bài bình luận này?...' | Result: NEGATIVE (confidence: 0.4230, raw: 2 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'mong kênh sẽ làm về những thể loại này nhiều hơn, mình thật sự rất thích những bộ điện ảnh có tính v...' | Result: POSITIVE (confidence: 0.4079, raw: 4 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'mỗi lần xem lại bộ phim này lại có thêm những xúc cảm mới, duy chỉ có cảm xúc bức bối là lần nào xem...' | Result: POSITIVE (confidence: 0.3109, raw: 4 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Rất thích những bộ phim chính kịch của TQ. Những đạo diễn như Trương Nghệ Mưu, Trần Khải Ca...diễn v...' | Result: POSITIVE (confidence: 0.4758, raw: 4 STARS)
+[2025-12-09 23:35:15] 📊 SENTIMENT ANALYSIS | Text: 'Phim này mỗi năm mình xem lại đều thức tỉnh ngộ ra 1 điều mới, 1 tầng ý nghĩa...' | Result: POSITIVE (confidence: 0.4739, raw: 5 STARS)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-09 23:43:28
+================================================================================
+
+[2025-12-09 23:43:39] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-09 23:49:38
+================================================================================
+
+[2025-12-09 23:49:39] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-09 23:54:18
+================================================================================
+
+[2025-12-09 23:54:19] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
