@@ -66,11 +66,30 @@ public class Model {
 
         for (Comment comment : post.getComments()) {
             if (comment.getReliefItem() == null) {
-                categoryClassifier.classifyPost(new PostAdapter(comment));
+                // Classify comment category directly using Python API
+                ReliefItem.Category category = categoryClassifier.classifyText(comment.getContent());
+                if (category != null) {
+                    comment.setReliefItem(new ReliefItem(category, "ML-classified (Python)", 3));
+                    System.out.println("  ✓ Comment category classified: " + category.getDisplayName());
+                }
             }
             if (comment.getSentiment() == null && sentimentAnalyzer != null) {
                 Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
                 comment.setSentiment(sentiment);
+            }
+            // Save comment to database after analysis
+            try {
+                if (dbManager != null) {
+                    System.out.println("  DEBUG: Saving comment " + comment.getCommentId() + 
+                        " | Sentiment: " + (comment.getSentiment() != null ? comment.getSentiment().getType() : "null") +
+                        " | Category: " + (comment.getReliefItem() != null ? comment.getReliefItem().getCategory() : "null"));
+                    dbManager.updateComment(comment);
+                } else {
+                    System.err.println("  Warning: dbManager is null, cannot save comment");
+                }
+            } catch (Exception e) {
+                System.err.println("Error saving comment to database: " + e.getMessage());
+                e.printStackTrace();
             }
         }
 
@@ -188,10 +207,35 @@ public class Model {
                 }
 
                 for (Comment comment : post.getComments()) {
-                    categoryClassifier.classifyPost(new PostAdapter(comment));
+                    // Classify comment category directly using Python API
+                    if (comment.getReliefItem() == null) {
+                        ReliefItem.Category category = categoryClassifier.classifyText(comment.getContent());
+                        if (category != null) {
+                            comment.setReliefItem(new ReliefItem(category, "ML-classified (Python)", 3));
+                            System.out.println("  ✓ Category: " + category.getDisplayName());
+                        }
+                    }
+                    
+                    // Analyze comment sentiment
                     if (sentimentAnalyzer != null) {
                         Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
                         comment.setSentiment(sentiment);
+                    }
+                    
+                    // Save comment to database
+                    try {
+                        if (dbManager != null) {
+                            System.out.println("  DEBUG: Saving comment " + comment.getCommentId() + 
+                                " | Sentiment: " + (comment.getSentiment() != null ? comment.getSentiment().getType() : "null") +
+                                " | Category: " + (comment.getReliefItem() != null ? comment.getReliefItem().getCategory() : "null"));
+                            dbManager.updateComment(comment);
+                            System.out.println("  ✓ Comment saved to database");
+                        } else {
+                            System.err.println("  ✗ ERROR: dbManager is null!");
+                        }
+                    } catch (Exception dbEx) {
+                        System.err.println("  ✗ Database error: " + dbEx.getMessage());
+                        dbEx.printStackTrace();
                     }
                 }
 
