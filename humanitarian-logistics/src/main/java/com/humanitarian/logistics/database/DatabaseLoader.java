@@ -1,10 +1,21 @@
 package com.humanitarian.logistics.database;
 
-import com.humanitarian.logistics.model.*;
-import com.humanitarian.logistics.ui.Model;
-import java.sql.*;
-import java.time.LocalDateTime;
 import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDateTime;
+
+import com.humanitarian.logistics.model.Comment;
+import com.humanitarian.logistics.model.DisasterManager;
+import com.humanitarian.logistics.model.DisasterType;
+import com.humanitarian.logistics.model.Post;
+import com.humanitarian.logistics.model.ReliefItem;
+import com.humanitarian.logistics.model.Sentiment;
+import com.humanitarian.logistics.model.YouTubePost;
+import com.humanitarian.logistics.ui.Model;
 
 public class DatabaseLoader {
     

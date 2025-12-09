@@ -1,13 +1,22 @@
 package com.humanitarian.logistics.ui;
 
-import com.humanitarian.logistics.model.*;
-import com.humanitarian.logistics.sentiment.SentimentAnalyzer;
-import com.humanitarian.logistics.sentiment.PythonCategoryClassifier;
-import com.humanitarian.logistics.database.DatabaseManager;
-import com.humanitarian.logistics.database.DataPersistenceManager;
-import com.humanitarian.logistics.analysis.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-import java.util.*;
+import com.humanitarian.logistics.analysis.AnalysisModule;
+import com.humanitarian.logistics.analysis.SatisfactionAnalysisModule;
+import com.humanitarian.logistics.analysis.TimeSeriesSentimentModule;
+import com.humanitarian.logistics.database.DataPersistenceManager;
+import com.humanitarian.logistics.database.DatabaseManager;
+import com.humanitarian.logistics.model.Comment;
+import com.humanitarian.logistics.model.Post;
+import com.humanitarian.logistics.model.ReliefItem;
+import com.humanitarian.logistics.model.Sentiment;
+import com.humanitarian.logistics.sentiment.PythonCategoryClassifier;
+import com.humanitarian.logistics.sentiment.SentimentAnalyzer;
 
 public class Model {
     private List<Post> posts;
