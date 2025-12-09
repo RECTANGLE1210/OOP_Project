@@ -347,66 +347,6 @@ public class AdvancedAnalysisPanel extends JPanel {
         
         tabs.addTab("By Category (Selector)", individualCategoryPanel);
 
-        JPanel categoryPanel = new JPanel(new BorderLayout());
-        ChartPanel chartPanel1 = new ChartPanel(null);
-        chartPanel1.setPreferredSize(new Dimension(800, 350));
-        InteractiveChartUtility.makeChartInteractive(chartPanel1);
-        JTextArea textArea1 = new JTextArea(6, 50);
-        textArea1.setEditable(false);
-        textArea1.setFont(new Font("Monospaced", Font.PLAIN, 9));
-
-        categoryPanel.add(chartPanel1, BorderLayout.CENTER);
-        categoryPanel.add(new JScrollPane(textArea1), BorderLayout.SOUTH);
-
-        JButton btn1 = new JButton("Refresh");
-        btn1.addActionListener(e -> {
-            try {
-                List<Comment> allComments = getAllCommentsFromDatabase();
-                DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-                StringBuilder sb = new StringBuilder("=== SATISFACTION BY CATEGORY (Based on Comments) ===\n\n");
-
-                Map<ReliefItem.Category, List<Comment>> byCategory = allComments.stream()
-                    .filter(c -> c.getReliefItem() != null)
-                    .collect(Collectors.groupingBy(c -> c.getReliefItem().getCategory()));
-
-                byCategory.forEach((category, categoryComments) -> {
-                    int total = categoryComments.size();
-                    long positive = categoryComments.stream()
-                        .filter(c -> c.getSentiment() != null && c.getSentiment().isPositive())
-                        .count();
-                    long negative = categoryComments.stream()
-                        .filter(c -> c.getSentiment() != null && c.getSentiment().isNegative())
-                        .count();
-
-                    double posPct = (double) positive / total * 100;
-                    double negPct = (double) negative / total * 100;
-
-                    dataset.addValue(posPct, "Positive", category.getDisplayName());
-                    dataset.addValue(negPct, "Negative", category.getDisplayName());
-
-                    sb.append(String.format("%s: Pos %.0f%% | Neg %.0f%% (%d comments)\n",
-                        category.getDisplayName(), posPct, negPct, total));
-                    if (negPct > 50) sb.append("  ⚠️ CRITICAL\n");
-                    else if (posPct > 60) sb.append("  ✅ SATISFIED\n");
-                });
-
-                JFreeChart chart = ChartFactory.createStackedBarChart(
-                    "Satisfaction by Category (Problem 1) - Comments",
-                    "Category", "%", dataset
-                );
-                chartPanel1.setChart(chart);
-                InteractiveChartUtility.enableChartInteractivity(chartPanel1);
-                textArea1.setText(sb.toString());
-            } catch (Exception ex) {
-                textArea1.setText("Error: " + ex.getMessage());
-            }
-        });
-
-        JPanel buttonPanel1 = new JPanel();
-        buttonPanel1.add(btn1);
-        categoryPanel.add(buttonPanel1, BorderLayout.SOUTH);
-        tabs.addTab("By Category", categoryPanel);
-
         JPanel sentimentPanel = new JPanel(new BorderLayout());
         ChartPanel pieChartPanel = new ChartPanel(null);
         pieChartPanel.setPreferredSize(new Dimension(400, 350));
@@ -589,8 +529,8 @@ public class AdvancedAnalysisPanel extends JPanel {
                     
                     String trend = pos > neg ? "📈 IMPROVING" : (neg > pos ? "📉 DETERIORATING" : "→ STABLE");
                     sb.append(String.format("%s: %s\n", date, trend));
-                    sb.append(String.format("   Total: %d | Positive: %d (%.1f%%) | Negative: %d (%.1f%%)\n", 
-                        dateComments.size(), pos, posPct, neg, negPct));
+                    sb.append(String.format("   Total: %d | Positive: %d (%.1f%%) | Negative: %d (%.1f%%) | Neutral: %d (%.1f%%)\n", 
+                        dateComments.size(), pos, posPct, neg, negPct, neu, neuPct));
                 });
                 
                 JFreeChart chart = ChartFactory.createStackedBarChart(
@@ -688,7 +628,7 @@ public class AdvancedAnalysisPanel extends JPanel {
                     dataset.addValue(neu, "Neutral", date);
 
                     String trend = pos > neg ? "📈 IMPROVING" : (neg > pos ? "📉 DETERIORATING" : "→ STABLE");
-                    sb.append(String.format("%s: %s | Comments:%d | Pos:%d Neg:%d\n", date, trend, dateComments.size(), pos, neg));
+                    sb.append(String.format("%s: %s | Comments:%d | Pos:%d Neg:%d Neu:%d\n", date, trend, dateComments.size(), pos, neg, neu));
                 });
 
                 JFreeChart chart = ChartFactory.createStackedBarChart(
