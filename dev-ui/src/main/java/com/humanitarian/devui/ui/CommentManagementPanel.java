@@ -102,7 +102,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout(10, 10));
 
-        String[] columns = {"Comment ID", "Author", "Posted At", "Sentiment", "Category", "Content Preview"};
+        String[] columns = {"Comment ID", "Author", "Posted At", "Sentiment", "Category", "Disaster Type", "Content Preview"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -203,6 +203,9 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         String category = comment.getReliefItem() != null && comment.getReliefItem().getCategory() != null ?
             comment.getReliefItem().getCategory().getDisplayName() : "N/A";
         
+        String disasterType = comment.getDisasterType() != null ? 
+            comment.getDisasterType() : "N/A";
+        
         String content = comment.getContent();
         if (content.length() > 50) {
             content = content.substring(0, 47) + "...";
@@ -218,6 +221,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             dateStr,
             sentimentType,
             category,
+            disasterType,
             content
         });
     }
@@ -242,6 +246,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             details.append("ID: ").append(comment.getCommentId()).append("\n");
             details.append("Author: ").append(comment.getAuthor()).append("\n");
             details.append("Posted: ").append(comment.getCreatedAt()).append("\n");
+            details.append("Disaster Type: ").append(comment.getDisasterType() != null ? comment.getDisasterType() : "N/A").append("\n");
             
             // Handle null sentiment
             if (comment.getSentiment() != null) {
@@ -400,7 +405,19 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         categoryCombo.setSelectedItem(currentCategory);
         categoryCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
         panel.add(categoryCombo);
-        panel.add(Box.createVerticalGlue());
+        panel.add(Box.createVerticalStrut(10));
+
+        panel.add(new JLabel("Disaster Type:"));
+        JComboBox<String> disasterTypeCombo = new JComboBox<>();
+        disasterTypeCombo.addItem("All Disasters");
+        for (String name : com.humanitarian.devui.model.DisasterManager.getInstance().getAllDisasterNames()) {
+            disasterTypeCombo.addItem(name);
+        }
+        String currentDisasterType = comment.getDisasterType() != null ? comment.getDisasterType() : "All Disasters";
+        disasterTypeCombo.setSelectedItem(currentDisasterType);
+        disasterTypeCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 25));
+        panel.add(disasterTypeCombo);
+        panel.add(Box.createVerticalStrut(10));
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 10, 5));
@@ -421,6 +438,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                 Sentiment.SentimentType newType = (Sentiment.SentimentType) sentimentCombo.getSelectedItem();
                 double newConfidence = ((Number) confidenceSpinner.getValue()).doubleValue();
                 ReliefItem.Category newCategory = (ReliefItem.Category) categoryCombo.getSelectedItem();
+                String newDisasterType = (String) disasterTypeCombo.getSelectedItem();
                 
                 Sentiment newSentiment = new Sentiment(newType, newConfidence, newContent);
                 Comment updatedComment = new Comment(
@@ -431,6 +449,7 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
                     comment.getAuthor()
                 );
                 updatedComment.setSentiment(newSentiment);
+                updatedComment.setDisasterType(newDisasterType);
                 if (comment.getReliefItem() != null) {
                     ReliefItem updatedReliefItem = new ReliefItem(
                         newCategory,

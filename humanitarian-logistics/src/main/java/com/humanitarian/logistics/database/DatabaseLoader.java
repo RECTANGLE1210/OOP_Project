@@ -227,6 +227,12 @@ public class DatabaseLoader {
                         }
                     }
                     
+                    // Load disaster type from database
+                    String disasterType = rs.getString("disaster_type");
+                    if (disasterType != null && !disasterType.isEmpty()) {
+                        comment.setDisasterType(disasterType);
+                    }
+                    
                     targetPost.addComment(comment);
                 }
             }

@@ -127,6 +127,7 @@ public class DatabaseManager {
                 "sentiment TEXT," +
                 "confidence REAL," +
                 "relief_category TEXT," +
+                "disaster_type TEXT," +
                 "FOREIGN KEY(post_id) REFERENCES posts(post_id))";
 
         try (Statement stmt = connection.createStatement()) {
@@ -186,17 +187,30 @@ public class DatabaseManager {
 
     public void updateComment(Comment comment) throws SQLException, ClassNotFoundException {
         ensureConnection();
-        String sql = "UPDATE comments SET content = ?, sentiment = ?, confidence = ?, relief_category = ? WHERE comment_id = ?";
+        // Delete and re-insert to avoid foreign key issues with INSERT OR REPLACE
+        String deleteSql = "DELETE FROM comments WHERE comment_id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(deleteSql)) {
+            pstmt.setString(1, comment.getCommentId());
+            pstmt.executeUpdate();
+        }
+        
+        // Now insert the updated comment
+        String sql = "INSERT INTO comments VALUES(?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, comment.getContent());
-            pstmt.setString(2, comment.getSentiment() != null ? comment.getSentiment().getType().toString() : null);
-            pstmt.setDouble(3, comment.getSentiment() != null ? comment.getSentiment().getConfidence() : 0);
+            pstmt.setString(1, comment.getCommentId());
+            pstmt.setString(2, comment.getPostId());
+            pstmt.setString(3, comment.getContent());
+            pstmt.setString(4, comment.getAuthor());
+            pstmt.setString(5, comment.getCreatedAt().toString());
+            pstmt.setString(6, comment.getSentiment() != null ? comment.getSentiment().getType().toString() : null);
+            pstmt.setDouble(7, comment.getSentiment() != null ? comment.getSentiment().getConfidence() : 0);
             String updateReliefCategory = null;
             if (comment.getReliefItem() != null && comment.getReliefItem().getCategory() != null) {
                 updateReliefCategory = comment.getReliefItem().getCategory().name();
             }
-            pstmt.setString(4, updateReliefCategory);
-            pstmt.setString(5, comment.getCommentId());
+            pstmt.setString(8, updateReliefCategory);
+            pstmt.setString(9, comment.getDisasterType());
+            
             pstmt.executeUpdate();
             commit();
         }
@@ -219,7 +233,7 @@ public class DatabaseManager {
 
     public void saveComment(Comment comment) throws SQLException, ClassNotFoundException {
         ensureConnection();
-        String sql = "INSERT OR REPLACE INTO comments VALUES(?,?,?,?,?,?,?,?)";
+        String sql = "INSERT OR REPLACE INTO comments VALUES(?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, comment.getCommentId());
             pstmt.setString(2, comment.getPostId());
@@ -233,6 +247,7 @@ public class DatabaseManager {
                 commentReliefCategory = comment.getReliefItem().getCategory().name();
             }
             pstmt.setString(8, commentReliefCategory);
+            pstmt.setString(9, comment.getDisasterType());
             pstmt.executeUpdate();
         }
     }
@@ -334,7 +349,7 @@ public class DatabaseManager {
     public java.util.List<Comment> getAllCommentsFromDatabase() throws SQLException, ClassNotFoundException {
         ensureConnection();
         java.util.List<Comment> comments = new java.util.ArrayList<>();
-        String sql = "SELECT comment_id, post_id, content, author, created_at, sentiment, confidence, relief_category FROM comments";
+        String sql = "SELECT comment_id, post_id, content, author, created_at, sentiment, confidence, relief_category, disaster_type FROM comments";
         
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -368,6 +383,12 @@ public class DatabaseManager {
                     } catch (IllegalArgumentException e) {
                         // Skip if invalid category
                     }
+                }
+                
+                // Load disaster type
+                String disasterType = rs.getString("disaster_type");
+                if (disasterType != null && !disasterType.isEmpty()) {
+                    comment.setDisasterType(disasterType);
                 }
                 
                 comments.add(comment);

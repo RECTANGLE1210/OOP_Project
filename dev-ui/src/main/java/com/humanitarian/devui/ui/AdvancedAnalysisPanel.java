@@ -108,6 +108,7 @@ public class AdvancedAnalysisPanel extends JPanel {
         btnAnalyzeCategory.addActionListener(e -> {
             try {
                 String selectedCategory = (String) categorySelector.getSelectedItem();
+                String selectedDisaster = (String) disasterSelector.getSelectedItem();
                 
                 StringBuilder sb = new StringBuilder();
                 sb.append("=== SATISFACTION ANALYSIS (Comments): ").append(selectedCategory).append(" ===\n\n");
@@ -115,6 +116,14 @@ public class AdvancedAnalysisPanel extends JPanel {
                 DefaultCategoryDataset barDataset = new DefaultCategoryDataset();
                 DefaultPieDataset<String> pieDataset = new DefaultPieDataset<>();
                 List<Comment> allComments = getAllCommentsFromDatabase();
+                
+                // Filter by disaster if needed
+                if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
+                    final String disasterFilter = selectedDisaster;
+                    allComments = allComments.stream()
+                        .filter(c -> disasterFilter.equals(c.getDisasterType()))
+                        .collect(Collectors.toList());
+                }
                 
                 // Debug info
                 System.out.println("DEBUG: Selected category: " + selectedCategory);
@@ -361,6 +370,7 @@ public class AdvancedAnalysisPanel extends JPanel {
         JButton btn2 = new JButton("Refresh");
         btn2.addActionListener(e -> {
             try {
+                // Note: Sentiment tab shows all disasters (no filter available)
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
 

@@ -332,7 +332,13 @@ public class DataCollectionPanel extends JPanel {
                 com.humanitarian.logistics.database.DatabaseManager dbMgr = new com.humanitarian.logistics.database.DatabaseManager();
                 for (Post post : model.getPosts()) {
                     dbMgr.savePost(post);
+                    // Set disaster type for comments from parent post
+                    String disasterType = post.getDisasterKeyword();
+                    if (disasterType == null || disasterType.isEmpty()) {
+                        disasterType = "N/A";
+                    }
                     for (Comment comment : post.getComments()) {
+                        comment.setDisasterType(disasterType);
                         dbMgr.saveComment(comment);
                     }
                 }

@@ -87,6 +87,14 @@ public class Model {
                 Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
                 comment.setSentiment(sentiment);
             }
+            // Set disaster type from parent post before saving
+            if (comment.getDisasterType() == null || comment.getDisasterType().isEmpty()) {
+                String disasterType = post.getDisasterKeyword();
+                if (disasterType == null || disasterType.isEmpty()) {
+                    disasterType = "N/A";
+                }
+                comment.setDisasterType(disasterType);
+            }
             // Save comment to database after analysis
             try {
                 if (dbManager != null) {

@@ -114,16 +114,30 @@ public class AdvancedAnalysisPanel extends JPanel {
         btnAnalyzeCategory.addActionListener(e -> {
             try {
                 String selectedCategory = (String) categorySelector.getSelectedItem();
+                String selectedDisaster = (String) disasterSelector.getSelectedItem();
                 
                 StringBuilder sb = new StringBuilder();
-                sb.append("=== SATISFACTION ANALYSIS (Comments): ").append(selectedCategory).append(" ===\n\n");
+                sb.append("=== SATISFACTION ANALYSIS (Comments): ").append(selectedCategory);
+                if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
+                    sb.append(" | Disaster: ").append(selectedDisaster);
+                }
+                sb.append(" ===\n\n");
                 
                 DefaultCategoryDataset dataset = new DefaultCategoryDataset();
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 
+                // Filter by disaster type
+                if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
+                    final String disasterFilter = selectedDisaster;
+                    allComments = allComments.stream()
+                        .filter(c -> disasterFilter.equals(c.getDisasterType()))
+                        .collect(Collectors.toList());
+                }
+                
                 // Debug info
                 System.out.println("DEBUG: Selected category: " + selectedCategory);
-                System.out.println("DEBUG: Total comments from database: " + allComments.size());
+                System.out.println("DEBUG: Selected disaster: " + selectedDisaster);
+                System.out.println("DEBUG: Total comments after disaster filter: " + allComments.size());
                 System.out.println("DEBUG: Total posts: " + model.getPosts().size());
                 
                 if (allComments.isEmpty()) {
@@ -364,6 +378,8 @@ public class AdvancedAnalysisPanel extends JPanel {
         btn2.addActionListener(e -> {
             try {
                 List<Comment> allComments = getAllCommentsFromDatabase();
+                
+                // For "Sentiment" tab, show all disasters
                 DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
 
                 long pos = allComments.stream().filter(c -> c.getSentiment() != null && c.getSentiment().isPositive()).count();
@@ -458,6 +474,14 @@ public class AdvancedAnalysisPanel extends JPanel {
                 
                 // Load comments directly from database
                 List<Comment> allComments = getAllCommentsFromDatabase();
+                
+                // Filter by disaster type
+                if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
+                    final String disasterFilter = selectedDisaster;
+                    allComments = allComments.stream()
+                        .filter(c -> disasterFilter.equals(c.getDisasterType()))
+                        .collect(Collectors.toList());
+                }
                 
                 // Filter by disaster if needed
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
@@ -611,6 +635,9 @@ public class AdvancedAnalysisPanel extends JPanel {
         btnTemporal.addActionListener(e -> {
             try {
                 List<Comment> allComments = getAllCommentsFromDatabase();
+                
+                // For "Over Time" tab, show all disasters (no filter available here)
+                // But if we need to filter by disaster in future, can add selector here
                 DefaultCategoryDataset dataset = new DefaultCategoryDataset();
                 StringBuilder sb = new StringBuilder("=== TEMPORAL SENTIMENT ANALYSIS (Problem 2 - Comments) ===\n\n");
 

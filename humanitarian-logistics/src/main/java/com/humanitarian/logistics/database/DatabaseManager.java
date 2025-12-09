@@ -127,6 +127,7 @@ public class DatabaseManager {
                 "sentiment TEXT," +
                 "confidence REAL," +
                 "relief_category TEXT," +
+                "disaster_type TEXT," +
                 "FOREIGN KEY(post_id) REFERENCES posts(post_id))";
 
         try (Statement stmt = connection.createStatement()) {
@@ -162,7 +163,7 @@ public class DatabaseManager {
 
     public void saveComment(Comment comment) throws SQLException, ClassNotFoundException {
         ensureConnection();
-        String sql = "INSERT OR REPLACE INTO comments VALUES(?,?,?,?,?,?,?,?)";
+        String sql = "INSERT OR REPLACE INTO comments VALUES(?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, comment.getCommentId());
             pstmt.setString(2, comment.getPostId());
@@ -176,6 +177,7 @@ public class DatabaseManager {
                 commentReliefCategory = comment.getReliefItem().getCategory().name();
             }
             pstmt.setString(8, commentReliefCategory);
+            pstmt.setString(9, comment.getDisasterType());
             pstmt.executeUpdate();
         }
     }
@@ -206,9 +208,15 @@ public class DatabaseManager {
 
     public void updateComment(Comment comment) throws SQLException, ClassNotFoundException {
         ensureConnection();
-        // Use INSERT OR REPLACE to handle both insert and update cases
-        // This ensures the comment is saved whether it exists or not
-        String sql = "INSERT OR REPLACE INTO comments VALUES(?,?,?,?,?,?,?,?)";
+        // Delete and re-insert to avoid foreign key issues with INSERT OR REPLACE
+        String deleteSql = "DELETE FROM comments WHERE comment_id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(deleteSql)) {
+            pstmt.setString(1, comment.getCommentId());
+            pstmt.executeUpdate();
+        }
+        
+        // Now insert the updated comment
+        String sql = "INSERT INTO comments VALUES(?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, comment.getCommentId());
             pstmt.setString(2, comment.getPostId());
@@ -222,13 +230,15 @@ public class DatabaseManager {
                 updateReliefCategory = comment.getReliefItem().getCategory().name();
             }
             pstmt.setString(8, updateReliefCategory);
+            pstmt.setString(9, comment.getDisasterType());
             
-            int rowsAffected = pstmt.executeUpdate();
-            System.out.println("    [DB] INSERT OR REPLACE: comment_id=" + comment.getCommentId() +
+            pstmt.executeUpdate();
+            System.out.println("    [DB] UPDATE comment: comment_id=" + comment.getCommentId() +
                 " | post_id=" + comment.getPostId() +
                 " | sentiment=" + (comment.getSentiment() != null ? comment.getSentiment().getType() : "NULL") +
                 " | confidence=" + (comment.getSentiment() != null ? String.format("%.4f", comment.getSentiment().getConfidence()) : "0.0000") +
-                " | category=" + updateReliefCategory);
+                " | category=" + updateReliefCategory +
+                " | disaster_type=" + comment.getDisasterType());
             commit();
         }
     }
@@ -276,7 +286,7 @@ public class DatabaseManager {
     public java.util.List<Comment> getAllCommentsFromDatabase() throws SQLException, ClassNotFoundException {
         ensureConnection();
         java.util.List<Comment> comments = new java.util.ArrayList<>();
-        String sql = "SELECT comment_id, post_id, content, author, created_at, sentiment, confidence, relief_category FROM comments";
+        String sql = "SELECT comment_id, post_id, content, author, created_at, sentiment, confidence, relief_category, disaster_type FROM comments";
         
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -310,6 +320,12 @@ public class DatabaseManager {
                     } catch (IllegalArgumentException e) {
                         // Skip if invalid category
                     }
+                }
+                
+                // Load disaster type
+                String disasterType = rs.getString("disaster_type");
+                if (disasterType != null && !disasterType.isEmpty()) {
+                    comment.setDisasterType(disasterType);
                 }
                 
                 comments.add(comment);

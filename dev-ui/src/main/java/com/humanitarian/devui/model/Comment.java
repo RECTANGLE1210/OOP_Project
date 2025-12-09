@@ -12,6 +12,7 @@ public class Comment implements Serializable, Comparable<Comment> {
     private final String content;
     private final LocalDateTime createdAt;
     private final String author;
+    private String disasterType;
 
     private Sentiment sentiment;
     private ReliefItem reliefItem;
@@ -61,6 +62,14 @@ public class Comment implements Serializable, Comparable<Comment> {
         this.reliefItem = reliefItem;
     }
 
+    public String getDisasterType() {
+        return disasterType;
+    }
+
+    public void setDisasterType(String disasterType) {
+        this.disasterType = disasterType;
+    }
+
     @Override
     public int compareTo(Comment other) {
         return this.createdAt.compareTo(other.createdAt);
@@ -86,6 +95,7 @@ public class Comment implements Serializable, Comparable<Comment> {
                 "commentId='" + commentId + '\'' +
                 ", author='" + author + '\'' +
                 ", createdAt=" + createdAt +
+                ", disasterType='" + disasterType + '\'' +
                 ", sentiment=" + sentiment +
                 ", reliefItem=" + reliefItem +
                 '}';
