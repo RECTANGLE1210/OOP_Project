@@ -263,6 +263,7 @@ public class DataCollectionPanel extends JPanel {
                         if (category != null) {
                             comment.setReliefItem(new ReliefItem(category, category.name(), 1));
                         }
+                        comment.setDisasterType(disasterType);
 
                         post.addComment(comment);
                     }

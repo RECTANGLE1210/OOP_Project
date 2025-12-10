@@ -725,3 +725,25 @@ Sentiment Analysis API Started: 2025-12-10 12:50:45
 [2025-12-10 12:51:46] 🏷️  CATEGORY CLASSIFICATION | Text: 'Nhac rat hay, nghe lắng đọng vào tâm hồn mong mọi người nai xe cho Hà VŨ Quạ...' | Result: TRANSPORTATION (0.3333)
 [2025-12-10 12:51:46] 🏷️  CATEGORY CLASSIFICATION | Text: '❤👍💐hay ngất ngây không muốn dừng nghe...' | Result: FOOD (0.1667)
 [2025-12-10 12:51:46] 🏷️  CATEGORY CLASSIFICATION | Text: 'Bài huyền thoại đây rồi ngoại🥰🥰🥰...' | Result: FOOD (0.1667)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-10 15:43:49
+================================================================================
+
+[2025-12-10 15:44:07] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-10 15:51:39
+================================================================================
+
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-10 15:54:32
+================================================================================
+
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-10 16:55:01
+================================================================================
+
+[2025-12-10 16:55:06] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
