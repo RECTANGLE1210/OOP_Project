@@ -71,25 +71,6 @@ echo "========================================"
 echo "Integrated: Python API + Java Application"
 echo ""
 
-# Check if installer has completed (marker is in humanitarian-logistics directory)
-INSTALL_MARKER="$APP_DIR/.installed"
-
-if [ ! -f "$INSTALL_MARKER" ]; then
-    print_info "First-time setup detected. Running installer..."
-    echo ""
-    
-    if [ ! -f "$APP_DIR/install.sh" ]; then
-        print_error "install.sh not found!"
-        exit 1
-    fi
-    
-    bash "$APP_DIR/install.sh"
-    if [ $? -ne 0 ]; then
-        print_error "Installation failed!"
-        exit 1
-    fi
-fi
-
 # ============================================
 # STEP 1: Start Python API
 # ============================================
@@ -97,60 +78,57 @@ echo ""
 print_info "STEP 1: Starting Python API for Sentiment & Category Classification"
 echo "========================================"
 
-PYTHON_API_PID=""
-
 if command -v python3 &> /dev/null; then
     PYTHON_CMD="python3"
 elif command -v python &> /dev/null; then
     PYTHON_CMD="python"
 else
-    print_error "Python not found. Sentiment analysis will use fallback."
-    PYTHON_CMD=""
+    print_error "Python not found. Please run install.sh first to set up dependencies."
+    exit 1
 fi
 
-if [ -n "$PYTHON_CMD" ]; then
-    # Kill any existing API process
-    pkill -f "sentiment_api.py" 2>/dev/null || true
-    sleep 1
+# Kill any existing API process
+pkill -f "sentiment_api.py" 2>/dev/null || true
+sleep 1
+
+PYTHON_API_SCRIPT="$APP_DIR/src/main/python/sentiment_api.py"
+if [ -f "$PYTHON_API_SCRIPT" ]; then
+    print_info "Starting Python API (with UTF-8 encoding support)..."
     
-    PYTHON_API_SCRIPT="$APP_DIR/src/main/python/sentiment_api.py"
-    if [ -f "$PYTHON_API_SCRIPT" ]; then
-        print_info "Starting Python API (with UTF-8 encoding support)..."
-        
-        # Start API in background
-        $PYTHON_CMD "$PYTHON_API_SCRIPT" > "$APP_DIR/.api.log" 2>&1 &
-        PYTHON_API_PID=$!
-        
-        # Wait for API to start (wait indefinitely until it's ready)
-        print_info "Waiting for API initialization..."
-        API_READY=0
-        TOTAL_WAIT=0
-        MAX_WAIT=120  # Maximum 2 minutes
-        
-        while [ $API_READY -eq 0 ] && [ $TOTAL_WAIT -lt $MAX_WAIT ]; do
-            if curl -s http://localhost:5001/health > /dev/null 2>&1; then
-                API_READY=1
-                break
-            fi
-            TOTAL_WAIT=$((TOTAL_WAIT + 1))
-            echo -n "."
-            sleep 1
-        done
-        
-        echo ""
-        
-        if [ $API_READY -eq 1 ]; then
-            print_status "Python API ready on http://localhost:5001 (PID: $PYTHON_API_PID)"
-            print_info "Sentiment Model: Vietnamese + 100+ languages"
-            print_info "Category Model: Keyword-based (instant Vietnamese)"
-        else
-            print_error "Python API failed to start after ${MAX_WAIT} seconds!"
-            print_info "Check logs: cat $APP_DIR/.api.log"
-            exit 1
+    # Start API in background
+    $PYTHON_CMD "$PYTHON_API_SCRIPT" > "$APP_DIR/.api.log" 2>&1 &
+    PYTHON_API_PID=$!
+    
+    # Wait for API to start (wait indefinitely until it's ready)
+    print_info "Waiting for API initialization..."
+    API_READY=0
+    TOTAL_WAIT=0
+    MAX_WAIT=600  # Maximum 10 minutes
+    
+    while [ $API_READY -eq 0 ] && [ $TOTAL_WAIT -lt $MAX_WAIT ]; do
+        if curl -s http://localhost:5001/health > /dev/null 2>&1; then
+            API_READY=1
+            break
         fi
+        TOTAL_WAIT=$((TOTAL_WAIT + 1))
+        echo -n "."
+        sleep 1
+    done
+    
+    echo ""
+    
+    if [ $API_READY -eq 1 ]; then
+        print_status "Python API ready on http://localhost:5001 (PID: $PYTHON_API_PID)"
+        print_info "Sentiment Model: Vietnamese + 100+ languages"
+        print_info "Category Model: Keyword-based (instant Vietnamese)"
     else
-        print_error "sentiment_api.py not found at $PYTHON_API_SCRIPT"
+        print_error "Python API failed to start after ${MAX_WAIT} seconds!"
+        print_info "Check logs: cat $APP_DIR/.api.log"
+        exit 1
     fi
+else
+    print_error "sentiment_api.py not found at $PYTHON_API_SCRIPT"
+    exit 1
 fi
 
 # ============================================

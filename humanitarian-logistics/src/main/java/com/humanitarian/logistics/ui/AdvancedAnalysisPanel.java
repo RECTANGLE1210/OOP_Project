@@ -48,18 +48,6 @@ public class AdvancedAnalysisPanel extends JPanel {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createTitledBorder("Advanced Analysis System"));
 
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton analyzeAllButton = new JButton("🔍 Analyze All Posts with Python API");
-        analyzeAllButton.setFont(new Font("Arial", Font.BOLD, 13));
-        analyzeAllButton.setBackground(new Color(3, 155, 229));
-        analyzeAllButton.setForeground(Color.WHITE);
-        analyzeAllButton.setOpaque(true);
-        analyzeAllButton.setBorderPainted(false);
-        analyzeAllButton.addActionListener(e -> analyzeAllPostsAction());
-        topPanel.add(analyzeAllButton);
-        topPanel.add(new JLabel(" ← Click to send all posts to Python API for sentiment analysis"));
-        add(topPanel, BorderLayout.NORTH);
-
         mainTabs = new JTabbedPane();
         mainTabs.addTab("📊 Problem 1: Satisfaction", createProblem1Tab());
         mainTabs.addTab("📈 Problem 2: Temporal", createProblem2Tab());
@@ -110,7 +98,7 @@ public class AdvancedAnalysisPanel extends JPanel {
         textArea0.setEditable(false);
         textArea0.setFont(new Font("Monospaced", Font.PLAIN, 9));
         
-        JButton btnAnalyzeCategory = new JButton("Analyze");
+        JButton btnAnalyzeCategory = new JButton("Visualize");
         btnAnalyzeCategory.addActionListener(e -> {
             try {
                 String selectedCategory = (String) categorySelector.getSelectedItem();
@@ -333,8 +321,17 @@ public class AdvancedAnalysisPanel extends JPanel {
             }
         });
         
-        JPanel buttonPanel0 = new JPanel();
+        JPanel buttonPanel0 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         buttonPanel0.add(btnAnalyzeCategory);
+        
+        JButton analyzeAllButton = new JButton("🔍 Analyze All Posts with Python API");
+        analyzeAllButton.setFont(new Font("Arial", Font.BOLD, 12));
+        analyzeAllButton.setBackground(new Color(3, 155, 229));
+        analyzeAllButton.setForeground(Color.WHITE);
+        analyzeAllButton.setOpaque(true);
+        analyzeAllButton.setBorderPainted(false);
+        analyzeAllButton.addActionListener(e -> analyzeAllPostsAction());
+        buttonPanel0.add(analyzeAllButton);
         
         disasterSelector.addActionListener(e -> btnAnalyzeCategory.doClick());
         categorySelector.addActionListener(e -> btnAnalyzeCategory.doClick());
@@ -450,7 +447,7 @@ public class AdvancedAnalysisPanel extends JPanel {
         textArea2.setEditable(false);
         textArea2.setFont(new Font("Monospaced", Font.PLAIN, 9));
         
-        JButton btnAnalyzeCategoryTemporal = new JButton("Analyze");
+        JButton btnAnalyzeCategoryTemporal = new JButton("Visualize");
         btnAnalyzeCategoryTemporal.addActionListener(e -> {
             try {
                 String selectedDisaster = (String) disasterSelector2.getSelectedItem();
@@ -588,8 +585,17 @@ public class AdvancedAnalysisPanel extends JPanel {
             }
         });
         
-        JPanel buttonPanel2a = new JPanel();
+        JPanel buttonPanel2a = new JPanel(new FlowLayout(FlowLayout.LEFT));
         buttonPanel2a.add(btnAnalyzeCategoryTemporal);
+        
+        JButton analyzeAllButton2 = new JButton("🔍 Analyze All Posts with Python API");
+        analyzeAllButton2.setFont(new Font("Arial", Font.BOLD, 12));
+        analyzeAllButton2.setBackground(new Color(3, 155, 229));
+        analyzeAllButton2.setForeground(Color.WHITE);
+        analyzeAllButton2.setOpaque(true);
+        analyzeAllButton2.setBorderPainted(false);
+        analyzeAllButton2.addActionListener(e -> analyzeAllPostsAction());
+        buttonPanel2a.add(analyzeAllButton2);
         
         categoryTemporalPanel.add(selectorPanel2, BorderLayout.NORTH);
         categoryTemporalPanel.add(chartPanel2, BorderLayout.CENTER);

@@ -178,6 +178,58 @@ else
 fi
 
 # ============================================================================
+# STEP 4B: Download and Initialize ML Models
+# ============================================================================
+print_section "Downloading ML Models"
+
+PYTHON_API_SCRIPT="src/main/python/sentiment_api.py"
+
+if [ -f "$PYTHON_API_SCRIPT" ]; then
+    print_info "Starting Python API to download and cache ML models..."
+    print_info "This may take 5-10 minutes on first run (downloading ~2GB models)"
+    print_info "Subsequent runs will be much faster"
+    echo ""
+    
+    # Start API in background
+    python3 "$PYTHON_API_SCRIPT" > ".api.log" 2>&1 &
+    API_PID=$!
+    
+    # Wait for API to be ready (max 10 minutes = 600 seconds)
+    print_info "Waiting for models to download and initialize..."
+    API_READY=0
+    TOTAL_WAIT=0
+    MAX_WAIT=600
+    
+    while [ $API_READY -eq 0 ] && [ $TOTAL_WAIT -lt $MAX_WAIT ]; do
+        if curl -s http://localhost:5001/health > /dev/null 2>&1; then
+            API_READY=1
+            break
+        fi
+        TOTAL_WAIT=$((TOTAL_WAIT + 1))
+        echo -n "."
+        sleep 1
+    done
+    
+    echo ""
+    
+    if [ $API_READY -eq 1 ]; then
+        print_success "ML models downloaded and initialized successfully"
+        print_info "Stopping API to complete installation..."
+        kill $API_PID 2>/dev/null || true
+        sleep 2
+        pkill -f "sentiment_api.py" 2>/dev/null || true
+    else
+        print_error "Failed to download ML models after ${MAX_WAIT} seconds!"
+        print_info "Check logs: cat .api.log"
+        kill $API_PID 2>/dev/null || true
+        exit 1
+    fi
+else
+    print_error "sentiment_api.py not found!"
+    exit 1
+fi
+
+# ============================================================================
 # STEP 5: Build the Application
 # ============================================================================
 print_section "Building Application"
