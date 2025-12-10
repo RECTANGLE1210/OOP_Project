@@ -367,3 +367,23 @@ Sentiment Analysis API Started: 2025-12-10 08:38:24
 ================================================================================
 
 [2025-12-10 08:38:26] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-10 08:58:33
+================================================================================
+
+[2025-12-10 08:58:34] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-10 09:01:08
+================================================================================
+
+[2025-12-10 09:01:10] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+[2025-12-10 09:01:46] 📊 SENTIMENT ANALYSIS | Text: 'Cùng nhìn lại hình ảnh tàn phá của bão Yagi | VnExpress...' | Result: NEGATIVE (confidence: 0.3216, raw: 1 STAR)
+[2025-12-10 09:01:46] 📊 SENTIMENT ANALYSIS | Text: 'Toàn cảnh bão Yagi và 12 tiếng càn quét miền Bắc...' | Result: NEGATIVE (confidence: 0.3188, raw: 1 STAR)
+[2025-12-10 09:01:46] 📊 SENTIMENT ANALYSIS | Text: 'Vì sao BÁ VƯƠNG BIỆT CƠ là KIỆT TÁC ĐIỆN ẢNH?...' | Result: NEUTRAL (confidence: 0.2892, raw: 3 STARS)
+[2025-12-10 09:01:46] 📊 SENTIMENT ANALYSIS | Text: 'Yagi  vẫn là một cái gì đó 😨#xuhướng #xuhuong #baoyagi2024 #baowipha...' | Result: NEGATIVE (confidence: 0.4645, raw: 1 STAR)
+[2025-12-10 09:01:46] 📊 SENTIMENT ANALYSIS | Text: 'BÃO YAGI VS BÃO WIPHA...' | Result: NEUTRAL (confidence: 0.2663, raw: 3 STARS)
+[2025-12-10 09:01:46] 📊 SENTIMENT ANALYSIS | Text: '2024 vs Quá Khứ 💀 #bão #typhoon #hurricane #2024 #past #skull #yagi #milton #harvey #capcut #viral...' | Result: NEGATIVE (confidence: 0.2572, raw: 1 STAR)
+[2025-12-10 09:01:46] 📊 SENTIMENT ANALYSIS | Text: 'cùng nhìn lại đường đi của bão Yagi...' | Result: POSITIVE (confidence: 0.4532, raw: 5 STARS)
+[2025-12-10 09:01:47] 📊 SENTIMENT ANALYSIS | Text: 'Bão số 3 Yagi: Mạnh cỡ nào mà được gọi là siêu bão? | THƯ VIỆN PHÁP LUẬT...' | Result: NEGATIVE (confidence: 0.4895, raw: 1 STAR)

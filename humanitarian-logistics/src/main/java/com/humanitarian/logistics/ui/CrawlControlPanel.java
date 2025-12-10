@@ -681,8 +681,31 @@ public class CrawlControlPanel extends JPanel {
                 
                 Thread.sleep(300);
                 
-                File dbFile = new File("humanitarian_logistics_user.db");
-                String dbPath = dbFile.getAbsolutePath();
+                // Get the correct database path (same logic as DatabaseManager)
+                String currentDir = System.getProperty("user.dir");
+                File projectRoot = new File(currentDir);
+                while (projectRoot != null && !projectRoot.getName().equals("OOP_Project")) {
+                    projectRoot = projectRoot.getParentFile();
+                }
+                
+                String basePath;
+                if (projectRoot != null) {
+                    basePath = projectRoot.getAbsolutePath() + "/humanitarian-logistics/data";
+                } else {
+                    if (currentDir.endsWith("humanitarian-logistics")) {
+                        basePath = currentDir + "/data";
+                    } else {
+                        basePath = currentDir + "/humanitarian-logistics/data";
+                    }
+                }
+                
+                File dataDir = new File(basePath);
+                if (!dataDir.exists()) {
+                    dataDir.mkdirs();
+                }
+                
+                String dbPath = basePath + "/humanitarian_logistics_user.db";
+                File dbFile = new File(dbPath);
                 
                 if (dbFile.exists()) {
                     if (!dbFile.delete()) {
