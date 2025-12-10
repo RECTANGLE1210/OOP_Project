@@ -355,3 +355,15 @@ Sentiment Analysis API Started: 2025-12-10 01:32:07
 [2025-12-10 01:32:27] 📊 SENTIMENT ANALYSIS | Text: '2024 vs Quá Khứ 💀 #bão #typhoon #hurricane #2024 #past #skull #yagi #milton #harvey #capcut #viral...' | Result: NEGATIVE (confidence: 0.2572, raw: 1 STAR)
 [2025-12-10 01:32:27] 📊 SENTIMENT ANALYSIS | Text: 'cùng nhìn lại đường đi của bão Yagi...' | Result: POSITIVE (confidence: 0.4532, raw: 5 STARS)
 [2025-12-10 01:32:27] 📊 SENTIMENT ANALYSIS | Text: 'Bão số 3 Yagi: Mạnh cỡ nào mà được gọi là siêu bão? | THƯ VIỆN PHÁP LUẬT...' | Result: NEGATIVE (confidence: 0.4895, raw: 1 STAR)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-10 01:58:00
+================================================================================
+
+[2025-12-10 01:58:01] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-10 08:38:24
+================================================================================
+
+[2025-12-10 08:38:26] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)

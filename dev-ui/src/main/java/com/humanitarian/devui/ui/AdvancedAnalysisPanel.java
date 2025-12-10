@@ -213,6 +213,19 @@ public class AdvancedAnalysisPanel extends JPanel {
                         
                         System.out.println("DEBUG: Comments for category " + finalCategory.getDisplayName() + ": " + categoryComments.size());
                         
+                        // Check if category has any comments
+                        if (categoryComments.isEmpty()) {
+                            sb.append("❌ No comments found for category: ").append(selectedCategory).append("\n");
+                            if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
+                                sb.append("Try selecting 'All Disasters' to see data for this category.\n");
+                            } else {
+                                sb.append("No data available. Please add posts/comments first.\n");
+                            }
+                            textArea0.setText(sb.toString());
+                            chartPanel0.setChart(null);
+                            return;
+                        }
+                        
                         int total = categoryComments.size();
                         long positive = categoryComments.stream()
                             .filter(c -> c.getSentiment() != null && c.getSentiment().isPositive())
