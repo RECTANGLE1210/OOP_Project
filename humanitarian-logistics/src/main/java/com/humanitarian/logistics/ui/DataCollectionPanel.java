@@ -173,6 +173,9 @@ public class DataCollectionPanel extends JPanel {
         saveButton.setBackground(new Color(46, 204, 113));
         saveButton.setForeground(Color.WHITE);
         saveButton.setOpaque(true);
+        saveButton.setBorderPainted(false);
+        saveButton.setFocusPainted(false);
+        saveButton.setContentAreaFilled(true);
         saveButton.addActionListener(e -> savePostWithComments());
         buttonPanel.add(saveButton);
 
@@ -183,6 +186,8 @@ public class DataCollectionPanel extends JPanel {
         useOurDatabaseButton.setForeground(Color.WHITE);
         useOurDatabaseButton.setOpaque(true);
         useOurDatabaseButton.setBorderPainted(false);
+        useOurDatabaseButton.setFocusPainted(false);
+        useOurDatabaseButton.setContentAreaFilled(true);
         useOurDatabaseButton.addActionListener(e -> loadOurDatabase());
         buttonPanel.add(useOurDatabaseButton);
 

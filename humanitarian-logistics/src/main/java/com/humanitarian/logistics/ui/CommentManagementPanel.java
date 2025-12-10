@@ -159,6 +159,10 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         deleteButton.setBackground(new Color(220, 53, 69));
         deleteButton.setForeground(Color.WHITE);
         deleteButton.setOpaque(true);
+        deleteButton.setBorderPainted(false);
+        deleteButton.setFocusPainted(false);
+        deleteButton.setContentAreaFilled(true);
+        deleteButton.setPreferredSize(new Dimension(100, 35));
         deleteButton.addActionListener(e -> {
             try {
                 deleteSelectedComment();
@@ -174,6 +178,10 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
         editButton.setBackground(new Color(0, 123, 255));
         editButton.setForeground(Color.WHITE);
         editButton.setOpaque(true);
+        editButton.setBorderPainted(false);
+        editButton.setFocusPainted(false);
+        editButton.setContentAreaFilled(true);
+        editButton.setPreferredSize(new Dimension(100, 35));
         editButton.addActionListener(e -> {
             try {
                 editSelectedComment();

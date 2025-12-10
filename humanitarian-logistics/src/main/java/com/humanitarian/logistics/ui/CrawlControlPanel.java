@@ -200,6 +200,13 @@ public class CrawlControlPanel extends JPanel {
 
         JButton mockButton = new JButton("Use Sample Data");
         mockButton.setMaximumSize(new Dimension(250, 40));
+        mockButton.setFont(new Font("Arial", Font.BOLD, 12));
+        mockButton.setBackground(new Color(52, 152, 219));
+        mockButton.setForeground(Color.WHITE);
+        mockButton.setOpaque(true);
+        mockButton.setBorderPainted(false);
+        mockButton.setFocusPainted(false);
+        mockButton.setContentAreaFilled(true);
         mockButton.addActionListener(e -> loadSampleData());
         panel.add(mockButton);
 
@@ -207,9 +214,13 @@ public class CrawlControlPanel extends JPanel {
 
         JButton resetDbButton = new JButton("Reset Database");
         resetDbButton.setMaximumSize(new Dimension(250, 40));
+        resetDbButton.setFont(new Font("Arial", Font.BOLD, 12));
         resetDbButton.setBackground(new Color(231, 76, 60));
         resetDbButton.setForeground(Color.WHITE);
         resetDbButton.setOpaque(true);
+        resetDbButton.setBorderPainted(false);
+        resetDbButton.setFocusPainted(false);
+        resetDbButton.setContentAreaFilled(true);
         resetDbButton.addActionListener(e -> resetDatabase());
         panel.add(resetDbButton);
 
