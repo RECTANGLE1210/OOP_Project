@@ -44,18 +44,19 @@ public class DatabaseManager {
         String currentDir = System.getProperty("user.dir");
         String basePath;
         
-        File currentFile = new File(currentDir);
-        File projectRoot = currentFile;
-        
-        while (projectRoot != null && !projectRoot.getName().equals("OOP_Project")) {
-            projectRoot = projectRoot.getParentFile();
-        }
-        
-        if (projectRoot != null) {
-            basePath = projectRoot.getAbsolutePath() + "/humanitarian-logistics/data";
+        if (currentDir.endsWith("/humanitarian-logistics") || currentDir.endsWith("\\humanitarian-logistics")) {
+            basePath = currentDir + "/data";
+        } else if (currentDir.endsWith("/OOP_Project") || currentDir.endsWith("\\OOP_Project")) {
+            basePath = currentDir + "/humanitarian-logistics/data";
         } else {
-            if (currentDir.endsWith("humanitarian-logistics")) {
-                basePath = currentDir + "/data";
+            File currentFile = new File(currentDir);
+            File projectRoot = currentFile;
+            while (projectRoot != null && !projectRoot.getName().equals("humanitarian-logistics")) {
+                projectRoot = projectRoot.getParentFile();
+            }
+            
+            if (projectRoot != null) {
+                basePath = projectRoot.getAbsolutePath() + "/data";
             } else {
                 basePath = currentDir + "/humanitarian-logistics/data";
             }
@@ -80,11 +81,9 @@ public class DatabaseManager {
                     try {
                         connection.close();
                     } catch (SQLException e) {
-
                     }
                 }
                 
-                // Create connection WITHOUT query parameters in URL to avoid filename issues
                 connection = DriverManager.getConnection(dbUrl);
                 
                 try (Statement stmt = connection.createStatement()) {
@@ -93,15 +92,12 @@ public class DatabaseManager {
                     stmt.execute("PRAGMA journal_mode = WAL");
                 }
                 createTables();
-                System.out.println("[DB] Database initialized: " + dbUrl);
-                System.out.println("[DB] Database file path: " + dbFilePath);
                 initialized = true;
             }
         }
     }
 
     private void createTables() throws SQLException {
-
         try (Statement stmt = connection.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS posts_old");
             stmt.execute("DROP TABLE IF EXISTS comments_old");
@@ -208,14 +204,12 @@ public class DatabaseManager {
 
     public void updateComment(Comment comment) throws SQLException, ClassNotFoundException {
         ensureConnection();
-        // Delete and re-insert to avoid foreign key issues with INSERT OR REPLACE
         String deleteSql = "DELETE FROM comments WHERE comment_id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(deleteSql)) {
             pstmt.setString(1, comment.getCommentId());
             pstmt.executeUpdate();
         }
         
-        // Now insert the updated comment
         String sql = "INSERT INTO comments VALUES(?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, comment.getCommentId());
@@ -233,12 +227,6 @@ public class DatabaseManager {
             pstmt.setString(9, comment.getDisasterType());
             
             pstmt.executeUpdate();
-            System.out.println("    [DB] UPDATE comment: comment_id=" + comment.getCommentId() +
-                " | post_id=" + comment.getPostId() +
-                " | sentiment=" + (comment.getSentiment() != null ? comment.getSentiment().getType() : "NULL") +
-                " | confidence=" + (comment.getSentiment() != null ? String.format("%.4f", comment.getSentiment().getConfidence()) : "0.0000") +
-                " | category=" + updateReliefCategory +
-                " | disaster_type=" + comment.getDisasterType());
             commit();
         }
     }
@@ -299,7 +287,6 @@ public class DatabaseManager {
                 
                 Comment comment = new Comment(commentId, postId, content, createdAt, author);
                 
-                // Load sentiment
                 String sentimentStr = rs.getString("sentiment");
                 if (sentimentStr != null && !sentimentStr.isEmpty()) {
                     try {
@@ -307,22 +294,18 @@ public class DatabaseManager {
                         double confidence = rs.getDouble("confidence");
                         comment.setSentiment(new Sentiment(type, confidence, content));
                     } catch (IllegalArgumentException | SQLException e) {
-                        // Skip if invalid sentiment data
                     }
                 }
                 
-                // Load relief category
                 String categoryStr = rs.getString("relief_category");
                 if (categoryStr != null && !categoryStr.isEmpty()) {
                     try {
                         ReliefItem.Category category = ReliefItem.Category.valueOf(categoryStr);
                         comment.setReliefItem(new ReliefItem(category, "Database loaded", 3));
                     } catch (IllegalArgumentException e) {
-                        // Skip if invalid category
                     }
                 }
                 
-                // Load disaster type
                 String disasterType = rs.getString("disaster_type");
                 if (disasterType != null && !disasterType.isEmpty()) {
                     comment.setDisasterType(disasterType);
@@ -332,7 +315,6 @@ public class DatabaseManager {
             }
         }
         
-        System.out.println("DEBUG: Loaded " + comments.size() + " comments from database");
         return comments;
     }
 

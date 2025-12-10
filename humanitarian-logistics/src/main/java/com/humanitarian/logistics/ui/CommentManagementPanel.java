@@ -261,7 +261,6 @@ public class CommentManagementPanel extends JPanel implements ModelListener {
             details.append("Posted: ").append(comment.getCreatedAt()).append("\n");
             details.append("Disaster Type: ").append(comment.getDisasterType() != null ? comment.getDisasterType() : "N/A").append("\n");
             
-            // Handle null sentiment
             if (comment.getSentiment() != null) {
                 details.append("Sentiment: ").append(comment.getSentiment().getType()).append("\n");
                 details.append("Confidence: ").append(String.format("%.2f", comment.getSentiment().getConfidence())).append("\n");

@@ -64,7 +64,6 @@ public class Model {
     }
 
     public void addPost(Post post) {
-
         if (post.getReliefItem() == null) {
             categoryClassifier.classifyPost(post);
         }
@@ -76,18 +75,15 @@ public class Model {
 
         for (Comment comment : post.getComments()) {
             if (comment.getReliefItem() == null) {
-                // Classify comment category directly using Python API
                 ReliefItem.Category category = categoryClassifier.classifyText(comment.getContent());
                 if (category != null) {
                     comment.setReliefItem(new ReliefItem(category, "ML-classified (Python)", 3));
-                    System.out.println("  ✓ Comment category classified: " + category.getDisplayName());
                 }
             }
             if (comment.getSentiment() == null && sentimentAnalyzer != null) {
                 Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
                 comment.setSentiment(sentiment);
             }
-            // Set disaster type from parent post before saving
             if (comment.getDisasterType() == null || comment.getDisasterType().isEmpty()) {
                 String disasterType = post.getDisasterKeyword();
                 if (disasterType == null || disasterType.isEmpty()) {
@@ -95,19 +91,12 @@ public class Model {
                 }
                 comment.setDisasterType(disasterType);
             }
-            // Save comment to database after analysis
             try {
                 if (dbManager != null) {
-                    System.out.println("  DEBUG: Saving comment " + comment.getCommentId() + 
-                        " | Sentiment: " + (comment.getSentiment() != null ? comment.getSentiment().getType() : "null") +
-                        " | Category: " + (comment.getReliefItem() != null ? comment.getReliefItem().getCategory() : "null"));
                     dbManager.updateComment(comment);
-                } else {
-                    System.err.println("  Warning: dbManager is null, cannot save comment");
                 }
             } catch (Exception e) {
                 System.err.println("Error saving comment to database: " + e.getMessage());
-                e.printStackTrace();
             }
         }
 
@@ -176,22 +165,66 @@ public class Model {
         }
     }
 
-    private static class PostAdapter extends Post {
-        PostAdapter(Comment comment) {
-            super(comment.getCommentId(), comment.getContent(), comment.getCreatedAt(),
-                    comment.getAuthor(), "ADAPTER");
-        }
-    }
-
     private void loadPersistedData() {
         List<Post> loadedPosts = persistenceManager.loadPosts();
         if (!loadedPosts.isEmpty()) {
-
             for (Post post : loadedPosts) {
                 addPost(post);
             }
             notifyListeners();
-            System.out.println("✓ Persisted data loaded: " + loadedPosts.size() + " posts");
+        }
+    }
+
+    public int analyzeAllPosts() {
+        System.out.println("Starting batch analysis of comments from all posts...");
+        int analyzedComments = 0;
+        int totalComments = 0;
+
+        for (Post post : posts) {
+            totalComments += post.getComments().size();
+        }
+
+        for (Post post : posts) {
+            for (Comment comment : post.getComments()) {
+                try {
+                    if (comment.getReliefItem() == null) {
+                        ReliefItem.Category category = categoryClassifier.classifyText(comment.getContent());
+                        if (category != null) {
+                            comment.setReliefItem(new ReliefItem(category, "ML-classified (Python)", 3));
+                        }
+                    }
+                    
+                    if (sentimentAnalyzer != null) {
+                        Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
+                        comment.setSentiment(sentiment);
+                    }
+                    
+                    try {
+                        if (dbManager != null) {
+                            dbManager.updateComment(comment);
+                        }
+                    } catch (Exception dbEx) {
+                        System.err.println("Database error: " + dbEx.getMessage());
+                    }
+                    analyzedComments++;
+                } catch (Exception e) {
+                    System.err.println("Error analyzing comment " + comment.getCommentId() + ": " + e.getMessage());
+                }
+            }
+        }
+
+        notifyListeners();
+        System.out.println("Batch analysis complete! Analyzed " + analyzedComments + "/" + totalComments + " comments");
+        return analyzedComments;
+    }
+
+    public void resetDatabaseConnection() {
+        if (dbManager != null) {
+            try {
+                dbManager.reset();
+            } catch (Exception e) {
+                System.err.println("Error resetting dbManager: " + e.getMessage());
+            }
         }
     }
 
@@ -199,85 +232,7 @@ public class Model {
         persistenceManager.savePosts(posts);
     }
 
-    public void clearPersistedData() {
-        persistenceManager.clearAllData();
-        posts.clear();
-        notifyListeners();
-    }
-
     public DataPersistenceManager getPersistenceManager() {
         return persistenceManager;
-    }
-
-    public int analyzeAllPosts() {
-        System.out.println("Starting batch analysis of comments from all posts...");
-        System.out.println("✓ Category Classification: Keyword-based (Instant Vietnamese)");
-        System.out.println("✓ Sentiment Analysis: xlm-roberta-large-xnli (Vietnamese + 100+ languages)");
-        int analyzedComments = 0;
-        int totalComments = 0;
-
-        // Count total comments
-        for (Post post : posts) {
-            totalComments += post.getComments().size();
-        }
-
-        // Analyze only comments, not posts
-        for (Post post : posts) {
-            for (Comment comment : post.getComments()) {
-                try {
-                    // Classify comment category directly using Python API
-                    if (comment.getReliefItem() == null) {
-                        ReliefItem.Category category = categoryClassifier.classifyText(comment.getContent());
-                        if (category != null) {
-                            comment.setReliefItem(new ReliefItem(category, "ML-classified (Python)", 3));
-                            System.out.println("  ✓ Category: " + category.getDisplayName());
-                        }
-                    }
-                    
-                    // Analyze comment sentiment
-                    if (sentimentAnalyzer != null) {
-                        Sentiment sentiment = sentimentAnalyzer.analyzeSentiment(comment.getContent());
-                        comment.setSentiment(sentiment);
-                    }
-                    
-                    // Save comment to database
-                    try {
-                        if (dbManager != null) {
-                            System.out.println("  DEBUG: Saving comment " + comment.getCommentId() + 
-                                " | Sentiment: " + (comment.getSentiment() != null ? comment.getSentiment().getType() : "null") +
-                                " | Category: " + (comment.getReliefItem() != null ? comment.getReliefItem().getCategory() : "null"));
-                            dbManager.updateComment(comment);
-                            System.out.println("  ✓ Comment saved to database");
-                        } else {
-                            System.err.println("  ✗ ERROR: dbManager is null!");
-                        }
-                    } catch (Exception dbEx) {
-                        System.err.println("  ✗ Database error: " + dbEx.getMessage());
-                        dbEx.printStackTrace();
-                    }
-                    analyzedComments++;
-
-                    System.out.println("✓ Analyzed comment " + analyzedComments + "/" + totalComments + 
-                        " (ID: " + comment.getCommentId() + ")");
-                } catch (Exception e) {
-                    System.err.println("✗ Error analyzing comment " + comment.getCommentId() + ": " + e.getMessage());
-                }
-            }
-        }
-
-        notifyListeners();
-        System.out.println("✓ Batch analysis complete! Analyzed " + analyzedComments + "/" + totalComments + " comments");
-        return analyzedComments;
-    }
-
-    public void resetDatabaseConnection() {
-        if (dbManager != null) {
-            try {
-
-                dbManager.reset();
-            } catch (Exception e) {
-                System.err.println("Error resetting dbManager: " + e.getMessage());
-            }
-        }
     }
 }

@@ -721,7 +721,6 @@ public class CrawlControlPanel extends JPanel {
                 
                 Thread.sleep(300);
                 
-                // Get the correct database path (same logic as DatabaseManager)
                 String currentDir = System.getProperty("user.dir");
                 File projectRoot = new File(currentDir);
                 while (projectRoot != null && !projectRoot.getName().equals("OOP_Project")) {

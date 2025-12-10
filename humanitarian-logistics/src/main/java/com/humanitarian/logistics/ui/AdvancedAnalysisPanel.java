@@ -126,19 +126,12 @@ public class AdvancedAnalysisPanel extends JPanel {
                 DefaultCategoryDataset dataset = new DefaultCategoryDataset();
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 
-                // Filter by disaster type
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
                     final String disasterFilter = selectedDisaster;
                     allComments = allComments.stream()
                         .filter(c -> disasterFilter.equals(c.getDisasterType()))
                         .collect(Collectors.toList());
                 }
-                
-                // Debug info
-                System.out.println("DEBUG: Selected category: " + selectedCategory);
-                System.out.println("DEBUG: Selected disaster: " + selectedDisaster);
-                System.out.println("DEBUG: Total comments after disaster filter: " + allComments.size());
-                System.out.println("DEBUG: Total posts: " + model.getPosts().size());
                 
                 if (allComments.isEmpty()) {
                     sb.append("❌ No comments found for selected filters!\n");
@@ -196,13 +189,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                     
                     String chartType = (String) chartTypeSelector.getSelectedItem();
                     JFreeChart chart;
-                    
-                    // Debug: print dataset info
-                    System.out.println("DEBUG: Chart type: " + chartType);
-                    System.out.println("DEBUG: Dataset rows: " + dataset.getRowCount() + ", columns: " + dataset.getColumnCount());
-                    for (int i = 0; i < dataset.getRowCount(); i++) {
-                        System.out.println("  Row " + i + ": " + dataset.getRowKey(i));
-                    }
                     
                     if ("Pie Chart".equals(chartType)) {
                         DefaultPieDataset<String> pieDataset = new DefaultPieDataset<>();
@@ -350,7 +336,6 @@ public class AdvancedAnalysisPanel extends JPanel {
         JPanel buttonPanel0 = new JPanel();
         buttonPanel0.add(btnAnalyzeCategory);
         
-        // Add auto-refresh listeners
         disasterSelector.addActionListener(e -> btnAnalyzeCategory.doClick());
         categorySelector.addActionListener(e -> btnAnalyzeCategory.doClick());
         chartTypeSelector.addActionListener(e -> btnAnalyzeCategory.doClick());
@@ -380,7 +365,6 @@ public class AdvancedAnalysisPanel extends JPanel {
             try {
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 
-                // For "Sentiment" tab, show all disasters
                 DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
 
                 long pos = allComments.stream().filter(c -> c.getSentiment() != null && c.getSentiment().isPositive()).count();
@@ -469,14 +453,11 @@ public class AdvancedAnalysisPanel extends JPanel {
         JButton btnAnalyzeCategoryTemporal = new JButton("Analyze");
         btnAnalyzeCategoryTemporal.addActionListener(e -> {
             try {
-
                 String selectedDisaster = (String) disasterSelector2.getSelectedItem();
                 String selectedCategory = (String) categorySelector2.getSelectedItem();
                 
-                // Load comments directly from database
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 
-                // Filter by disaster type
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
                     final String disasterFilter = selectedDisaster;
                     allComments = allComments.stream()
@@ -484,12 +465,10 @@ public class AdvancedAnalysisPanel extends JPanel {
                         .collect(Collectors.toList());
                 }
                 
-                // Filter by disaster if needed
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
                     final String disasterName = selectedDisaster;
                     allComments = allComments.stream()
                         .filter(c -> {
-                            // Find post that contains this comment
                             for (Post post : model.getPosts()) {
                                 if (post.getComments().contains(c)) {
                                     if (post instanceof YouTubePost) {
@@ -637,8 +616,6 @@ public class AdvancedAnalysisPanel extends JPanel {
             try {
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 
-                // For "Over Time" tab, show all disasters (no filter available here)
-                // But if we need to filter by disaster in future, can add selector here
                 DefaultCategoryDataset dataset = new DefaultCategoryDataset();
                 StringBuilder sb = new StringBuilder("=== TEMPORAL SENTIMENT ANALYSIS (Problem 2 - Comments) ===\n\n");
 
@@ -773,7 +750,6 @@ public class AdvancedAnalysisPanel extends JPanel {
                         .collect(Collectors.toList());
                 }
                 
-                // Get comments from selected posts and filter by disaster
                 List<Comment> allComments = getAllCommentsFromDatabase();
                 if (selectedDisaster != null && !selectedDisaster.equals("All Disasters")) {
                     final String disasterFilter = selectedDisaster;
@@ -856,17 +832,13 @@ public class AdvancedAnalysisPanel extends JPanel {
     private List<Comment> getAllCommentsFromDatabase() {
         List<Comment> allComments = new ArrayList<>();
         try {
-            // Try to load directly from database first
             com.humanitarian.logistics.database.DatabaseManager dbManager = com.humanitarian.logistics.database.DatabaseManager.getInstance();
             allComments = dbManager.getAllCommentsFromDatabase();
-            System.out.println("DEBUG: Loaded " + allComments.size() + " comments from database");
         } catch (Exception e) {
-            System.err.println("WARNING: Could not load from database, falling back to model: " + e.getMessage());
-            // Fallback to model if database fails
+            System.err.println("Could not load from database, using model fallback");
             for (Post post : model.getPosts()) {
                 allComments.addAll(post.getComments());
             }
-            System.out.println("DEBUG: Loaded " + allComments.size() + " comments from model (fallback)");
         }
         return allComments;
     }

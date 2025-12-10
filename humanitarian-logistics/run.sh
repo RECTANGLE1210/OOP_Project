@@ -71,20 +71,19 @@ echo "========================================"
 echo "Integrated: Python API + Java Application"
 echo ""
 
-# Check if installer has completed
-PARENT_DIR="$(dirname "$APP_DIR")"
-INSTALL_MARKER="$PARENT_DIR/.installed"
+# Check if installer has completed (marker is in humanitarian-logistics directory)
+INSTALL_MARKER="$APP_DIR/.installed"
 
 if [ ! -f "$INSTALL_MARKER" ]; then
     print_info "First-time setup detected. Running installer..."
     echo ""
     
-    if [ ! -f "$PARENT_DIR/install.sh" ]; then
+    if [ ! -f "$APP_DIR/install.sh" ]; then
         print_error "install.sh not found!"
         exit 1
     fi
     
-    bash "$PARENT_DIR/install.sh"
+    bash "$APP_DIR/install.sh"
     if [ $? -ne 0 ]; then
         print_error "Installation failed!"
         exit 1
@@ -122,27 +121,32 @@ if [ -n "$PYTHON_CMD" ]; then
         $PYTHON_CMD "$PYTHON_API_SCRIPT" > "$APP_DIR/.api.log" 2>&1 &
         PYTHON_API_PID=$!
         
-        # Wait for API to start (up to 10 seconds)
+        # Wait for API to start (wait indefinitely until it's ready)
         print_info "Waiting for API initialization..."
-        WAIT_COUNT=0
         API_READY=0
+        TOTAL_WAIT=0
+        MAX_WAIT=120  # Maximum 2 minutes
         
-        while [ $WAIT_COUNT -lt 20 ]; do
+        while [ $API_READY -eq 0 ] && [ $TOTAL_WAIT -lt $MAX_WAIT ]; do
             if curl -s http://localhost:5001/health > /dev/null 2>&1; then
                 API_READY=1
                 break
             fi
-            WAIT_COUNT=$((WAIT_COUNT + 1))
-            sleep 0.5
+            TOTAL_WAIT=$((TOTAL_WAIT + 1))
+            echo -n "."
+            sleep 1
         done
+        
+        echo ""
         
         if [ $API_READY -eq 1 ]; then
             print_status "Python API ready on http://localhost:5001 (PID: $PYTHON_API_PID)"
             print_info "Sentiment Model: Vietnamese + 100+ languages"
             print_info "Category Model: Keyword-based (instant Vietnamese)"
         else
-            print_warning "API taking longer to start - may still be initializing"
-            print_info "Check logs: tail -f $APP_DIR/.api.log"
+            print_error "Python API failed to start after ${MAX_WAIT} seconds!"
+            print_info "Check logs: cat $APP_DIR/.api.log"
+            exit 1
         fi
     else
         print_error "sentiment_api.py not found at $PYTHON_API_SCRIPT"
@@ -150,10 +154,10 @@ if [ -n "$PYTHON_CMD" ]; then
 fi
 
 # ============================================
-# STEP 2: Build Java Application
+# STEP 2: Build and Start Java Application
 # ============================================
 echo ""
-print_info "STEP 2: Building Java Application"
+print_info "STEP 2: Building and Starting Java Application"
 echo "========================================"
 
 if mvn clean compile package -DskipTests -q 2>/dev/null; then
@@ -163,12 +167,6 @@ else
     exit 1
 fi
 
-# ============================================
-# STEP 3: Start Java Application
-# ============================================
-echo ""
-print_info "STEP 3: Starting Java Application with GUI"
-echo "========================================"
 echo ""
 echo "📱 Application Features:"
 echo "  • 📚 Data Collection: Add posts manually"
@@ -190,8 +188,15 @@ echo ""
 print_info "Java application starting in 2 seconds..."
 sleep 2
 
-# Start Java application in background and capture its PID
-mvn exec:java -Dexec.mainClass="com.humanitarian.logistics.HumanitarianLogisticsApp" &
+# Start Java application using the JAR with dependencies
+JAR_FILE="target/humanitarian-logistics-1.0-SNAPSHOT-jar-with-dependencies.jar"
+if [ ! -f "$JAR_FILE" ]; then
+    print_error "JAR file not found! Build may have failed."
+    exit 1
+fi
+
+print_info "Starting Java application..."
+java -jar "$JAR_FILE" &
 JAVA_APP_PID=$!
 
 # Wait for Java app to exit

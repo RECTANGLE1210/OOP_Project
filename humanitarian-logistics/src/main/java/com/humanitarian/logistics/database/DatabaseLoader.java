@@ -24,12 +24,9 @@ public class DatabaseLoader {
         String dbPath;
         
         if (currentDir.endsWith("humanitarian-logistics")) {
-
-            File rootDir = new File(currentDir).getParentFile();
-            dbPath = rootDir.getAbsolutePath() + "/dev-ui/data/humanitarian_logistics_curated.db";
+            dbPath = currentDir + "/data/humanitarian_logistics_curated.db";
         } else {
-
-            dbPath = currentDir + "/dev-ui/data/humanitarian_logistics_curated.db";
+            dbPath = currentDir + "/humanitarian-logistics/data/humanitarian_logistics_curated.db";
         }
         
         return dbPath;
@@ -48,7 +45,6 @@ public class DatabaseLoader {
     private static void saveLoadedDataToUserDatabase(Model model) {
         DatabaseManager dbManager = null;
         try {
-
             String currentDir = System.getProperty("user.dir");
             String basePath;
             
@@ -60,10 +56,8 @@ public class DatabaseLoader {
             }
             
             if (projectRoot != null) {
-
                 basePath = projectRoot.getAbsolutePath() + "/humanitarian-logistics/data";
             } else {
-
                 if (currentDir.endsWith("humanitarian-logistics")) {
                     basePath = currentDir + "/data";
                 } else {
@@ -80,7 +74,6 @@ public class DatabaseLoader {
             java.io.File userDbFile = new java.io.File(dbFilePath);
             if (userDbFile.exists()) {
                 userDbFile.delete();
-
                 java.io.File journalFile = new java.io.File(dbFilePath + "-journal");
                 if (journalFile.exists()) {
                     journalFile.delete();
@@ -95,7 +88,6 @@ public class DatabaseLoader {
                 }
                 Thread.sleep(200);
             }
-            
 
             dbManager = new DatabaseManager();
             
@@ -105,9 +97,7 @@ public class DatabaseLoader {
             try {
                 dbManager.commit();
             } catch (SQLException e) {
-                // Ignore - SQLite auto-commits in non-transactional mode
             }
-            System.out.println("✓ Data saved to user database (humanitarian_logistics_user.db)");
         } catch (Exception e) {
             System.err.println("Error saving to user database: " + e.getMessage());
             e.printStackTrace();
@@ -116,7 +106,6 @@ public class DatabaseLoader {
                 try {
                     dbManager.close();
                 } catch (SQLException e) {
-                    // Ignore
                 }
             }
         }
@@ -126,18 +115,24 @@ public class DatabaseLoader {
         try {
             Class.forName("org.sqlite.JDBC");
             String dbPath = getDevUIDbPath();
+            
+            File dbFile = new File(dbPath);
+            if (!dbFile.exists()) {
+                System.err.println("Curated database not found at: " + dbPath);
+                return;
+            }
+            
             String dbUrl = "jdbc:sqlite:" + dbPath;
             try (Connection connection = DriverManager.getConnection(dbUrl)) {
                 loadPostsFromDevUI(connection, model);
                 loadCommentsFromDevUI(connection, model);
                 int postCount = model.getPosts().size();
-                System.out.println("\n✓ LOADED FROM DEV-UI DATABASE");
-                System.out.println("  Total posts: " + postCount);
+                System.out.println("Loaded from dev-ui database: " + postCount + " posts");
             }
         } catch (ClassNotFoundException e) {
             System.err.println("SQLite driver not found: " + e.getMessage());
         } catch (SQLException e) {
-            System.err.println("Error loading from dev-ui database: " + e.getMessage());
+            System.err.println("Error loading from curated database: " + e.getMessage());
         }
     }
     
@@ -161,7 +156,6 @@ public class DatabaseLoader {
                         ReliefItem.Category category = ReliefItem.Category.valueOf(categoryStr);
                         post.setReliefItem(new ReliefItem(category, categoryStr, 1));
                     } catch (IllegalArgumentException e) {
-
                     }
                 }
                 
@@ -201,10 +195,8 @@ public class DatabaseLoader {
                 }
                 
                 if (targetPost != null) {
-
                     Comment comment = new Comment(commentId, postId, content, createdAt, author);
                     
-                    // Load sentiment and confidence from database
                     String sentimentStr = rs.getString("sentiment");
                     if (sentimentStr != null && !sentimentStr.isEmpty()) {
                         try {
@@ -212,22 +204,18 @@ public class DatabaseLoader {
                             double confidence = rs.getDouble("confidence");
                             comment.setSentiment(new Sentiment(sentimentType, confidence, content));
                         } catch (IllegalArgumentException | SQLException e) {
-                            // If sentiment data is invalid, leave as null for re-analysis
                         }
                     }
                     
-                    // Load relief category from database
                     String categoryStr = rs.getString("relief_category");
                     if (categoryStr != null && !categoryStr.isEmpty()) {
                         try {
                             ReliefItem.Category category = ReliefItem.Category.valueOf(categoryStr);
                             comment.setReliefItem(new ReliefItem(category, categoryStr, 1));
                         } catch (IllegalArgumentException e) {
-                            // If category data is invalid, leave as null for re-analysis
                         }
                     }
                     
-                    // Load disaster type from database
                     String disasterType = rs.getString("disaster_type");
                     if (disasterType != null && !disasterType.isEmpty()) {
                         comment.setDisasterType(disasterType);

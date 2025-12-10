@@ -51,7 +51,7 @@ print_error() {
 print_section "Checking Java Installation"
 
 if command -v java &> /dev/null; then
-    JAVA_VERSION=$(java -version 2>&1 | grep -oP 'version "\K[^"]*')
+    JAVA_VERSION=$(java -version 2>&1 | grep "version" | sed 's/.*version "\([^"]*\)".*/\1/')
     print_success "Java already installed: $JAVA_VERSION"
 else
     print_section "Installing Java"
@@ -202,13 +202,16 @@ fi
 # ============================================================================
 print_section "Initializing Databases"
 
+# Create data directory if it doesn't exist
+mkdir -p data
+
 # Create empty database files for first-time use
-touch humanitarian_logistics_user.db
-touch humanitarian_logistics_curated.db
+touch data/humanitarian_logistics_user.db
+touch data/humanitarian_logistics_curated.db
 
 print_success "Database files created"
-print_success "  • humanitarian_logistics_user.db (for user data)"
-print_success "  • humanitarian_logistics_curated.db (for curated data)"
+print_success "  • data/humanitarian_logistics_user.db (for user data)"
+print_success "  • data/humanitarian_logistics_curated.db (for curated data)"
 
 # ============================================================================
 # STEP 7: Installation Complete
@@ -229,18 +232,8 @@ echo ""
 echo "═══════════════════════════════════════════════════════════════════════════"
 echo ""
 
-# ============================================================================
-# STEP 8: Ask to launch app
-# ============================================================================
-read -p "Would you like to start the application now? (y/n) " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo ""
-    echo "Starting application..."
-    echo ""
-    mvn exec:java -Dexec.mainClass="com.humanitarian.logistics.HumanitarianLogisticsApp"
-else
-    echo ""
-    echo "You can start the app later with: bash run.sh"
-    echo ""
-fi
+echo ""
+echo "Installation complete! You can now start the app with:"
+echo ""
+echo "  bash run.sh"
+echo ""
