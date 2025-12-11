@@ -447,7 +447,7 @@ Ensure the Python API is running before or simultaneously with the Java applicat
 
 The application features a tabbed interface with four main functional areas, designed for a complete sentiment analysis workflow. Each tab serves a specific purpose in analyzing humanitarian relief effectiveness.
 
-![Application Interface Overview](resource/EmptyAnalysisTab.png)
+![Application Interface Overview](resource/EmptyAnalysisTab.png){width=80%}
 
 The interface displays four main tabs: **Analysis** (📊) for viewing sentiment analysis results, **Comments Manager** (💬) for managing data, **Crawl Web** (🌐) for collecting data from YouTube, and **Data Entry** (✏️) for manual data input.
 
@@ -461,7 +461,7 @@ The **Analysis** tab is the primary interface for viewing sentiment analysis res
 
 **Before Analysis:**
 
-![Empty Analysis Tab](resource/EmptyAnalysisTab.png)
+![Empty Analysis Tab](resource/EmptyAnalysisTab.png){width=80%}
 
 Before performing analysis, the tab displays an empty state with controls ready for analysis.
 
@@ -486,11 +486,11 @@ After analysis completes, customize what to display:
 
 Once filters are set, click **"Visualize"** to refresh charts with your selections.
 
-![Problem 1 Diagram](resource/Problem1ByCategory.png)
+![Problem 1 Diagram](resource/Problem1ByCategory.png){width=85%}
 
 **Sentiment Tab - Overall Distribution:**
 
-![Problem 1 Sentiment](resource/Problem1Sentiment.png)
+![Problem 1 Sentiment](resource/Problem1Sentiment.png){width=80%}
 
 This tab shows the overall sentiment distribution across all analyzed posts:
 - **Pie Chart Display**: Segments represent POSITIVE, NEGATIVE, and NEUTRAL sentiments
@@ -526,7 +526,7 @@ This tab provides three different perspectives on how sentiment evolves during t
 
 **Visualization 1: Overall Sentiment Timeline**
 
-![Problem 2 Overall Timeline](resource/Problem2Overtime.png)
+![Problem 2 Overall Timeline](resource/Problem2Overtime.png){width=85%}
 
 - **X-axis**: Timeline of disaster response (days/weeks)
 - **Y-axis**: Number of posts with each sentiment
@@ -535,7 +535,7 @@ This tab provides three different perspectives on how sentiment evolves during t
 
 **Visualization 2: Sentiment by Category Over Time**
 
-![Problem 2 By Category](resource/Problem2ByCategory.png)
+![Problem 2 By Category](resource/Problem2ByCategory.png){width=85%}
 
 - **Multiple Lines**: Each relief category has its own trend line
 - **X-axis**: Timeline of disaster response
@@ -544,7 +544,7 @@ This tab provides three different perspectives on how sentiment evolves during t
 
 **Visualization 3: Statistics Report**
 
-![Problem 2 Statistics](resource/Problem2Sentiment.png)
+![Problem 2 Statistics](resource/Problem2Sentiment.png){width=85%}
 
 - **Format**: Detailed breakdown of sentiment data
 - **Contents**: Time period, POSITIVE count, NEGATIVE count, NEUTRAL count, percentages, totals
@@ -563,7 +563,7 @@ This tab provides three different perspectives on how sentiment evolves during t
 
 **Report Contents:**
 
-![Combined Report](resource/CombinedReport.png)
+![Combined Report](resource/CombinedReport.png){width=85%}
 
 The report includes:
 - **Executive Summary**: Key findings at a glance
@@ -580,7 +580,7 @@ The report includes:
 
 The **Comments Manager** tab allows you to review, edit, and manage all collected data. This is where you can verify analysis accuracy and make corrections.
 
-![Comments Manager Tab](resource/CommentManageTable.png)
+![Comments Manager Tab](resource/CommentManageTable.png){width=90%}
 
 **Four Core Operations:**
 
@@ -621,7 +621,7 @@ The **Comments Manager** tab allows you to review, edit, and manage all collecte
 
 The **Crawl Web** tab collects real data from YouTube. It supports two crawling modes for different use cases.
 
-![Crawl Web Tab](resource/WebCrawler.png)
+![Crawl Web Tab](resource/WebCrawler.png){width=90%}
 
 **Mode 1: Crawl by Keywords/Hashtags**
 
@@ -669,7 +669,7 @@ Extract all comments from a specific YouTube video.
 
 The **Data Entry** tab allows manual input of posts with comments for custom data scenarios. Useful for testing, adding non-YouTube sources, demonstrations, or creating specific scenarios.
 
-![Data Entry Tab](resource/DataEntry.png)
+![Data Entry Tab](resource/DataEntry.png){width=90%}
 
 **Interface Overview:**
 
@@ -1494,8 +1494,6 @@ New analysis modules (Geographic Analysis, Demographic Analysis, Language Analys
 
 The Database package manages all aspects of data persistence, providing both low-level SQL operations and high-level application interfaces for data management.
 
-Package này quản lý lưu trữ và tải dữ liệu:
-
 ```mermaid
 classDiagram
     class DatabaseManager {
@@ -1547,8 +1545,6 @@ The DatabaseLoader class provides utility methods for bulk loading and saving da
 #### 6.3.7 Preprocessor Package - Text Processing and Classification
 
 The Preprocessor package provides utilities for normalizing and analyzing text content before it is subjected to sentiment analysis or category classification.
-
-Package này xử lý dữ liệu text:
 
 ```mermaid
 classDiagram
