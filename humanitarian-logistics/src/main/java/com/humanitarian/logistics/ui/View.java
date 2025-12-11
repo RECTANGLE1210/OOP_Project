@@ -45,17 +45,17 @@ public class View extends JFrame implements ModelListener {
         mainTabbedPane = new JTabbedPane();
         mainTabbedPane.setFont(new Font("Arial", Font.BOLD, 12));
 
+        advancedAnalysisPanel = new AdvancedAnalysisPanel(model);
+        mainTabbedPane.addTab("📊 Analysis", advancedAnalysisPanel);
+
+        commentPanel = new CommentManagementPanel(model);
+        mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
+
         crawlPanel = new CrawlControlPanel(model);
         mainTabbedPane.addTab("🌐 Crawl Web", crawlPanel);
 
         dataCollectionPanel = new DataCollectionPanel(model);
         mainTabbedPane.addTab("✏️  Data Entry", dataCollectionPanel);
-
-        commentPanel = new CommentManagementPanel(model);
-        mainTabbedPane.addTab("💬 Comments Manager", commentPanel);
-
-        advancedAnalysisPanel = new AdvancedAnalysisPanel(model);
-        mainTabbedPane.addTab("📊 Analysis", advancedAnalysisPanel);
 
         mainPanel.add(mainTabbedPane, BorderLayout.CENTER);
 

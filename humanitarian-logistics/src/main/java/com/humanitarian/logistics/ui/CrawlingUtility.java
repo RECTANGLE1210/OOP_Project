@@ -56,7 +56,7 @@ public class CrawlingUtility {
             }
         }
         
-        return manager.getDisasterType("yagi");
+        return null;
     }
     
     public static List<String> validateAndCleanUrls(String urlText, String platformType) {

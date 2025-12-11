@@ -1,9 +1,12 @@
 package com.humanitarian.logistics.ui;
 
 import com.humanitarian.logistics.model.*;
+import com.humanitarian.logistics.database.DatabaseLoader;
+import com.humanitarian.logistics.database.DatabaseManager;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.File;
 import java.util.List;
 import java.util.*;
 
@@ -128,7 +131,7 @@ public class DisasterManagementPanel extends JPanel {
         panel.add(infoLabel);
         panel.add(Box.createVerticalStrut(8));
 
-        JTextArea infoArea = new JTextArea(8, 25);
+        JTextArea infoArea = new JTextArea(4, 25);
         infoArea.setEditable(false);
         infoArea.setLineWrap(true);
         infoArea.setWrapStyleWord(true);
@@ -141,6 +144,44 @@ public class DisasterManagementPanel extends JPanel {
         infoArea.setFont(new Font("Arial", Font.PLAIN, 10));
         JScrollPane infoScroll = new JScrollPane(infoArea);
         panel.add(infoScroll);
+
+        panel.add(Box.createVerticalStrut(15));
+
+        // Separator - Database Management Section
+        JSeparator separator = new JSeparator();
+        panel.add(separator);
+        
+        JLabel dbManagementLabel = new JLabel("📊 DATABASE MANAGEMENT");
+        dbManagementLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(dbManagementLabel);
+        panel.add(Box.createVerticalStrut(8));
+
+        JButton useOurDatabaseButton = new JButton("📚 Use Our Database");
+        useOurDatabaseButton.setFont(new Font("Arial", Font.BOLD, 12));
+        useOurDatabaseButton.setBackground(new Color(34, 139, 34));
+        useOurDatabaseButton.setForeground(Color.WHITE);
+        useOurDatabaseButton.setOpaque(true);
+        useOurDatabaseButton.setBorderPainted(false);
+        useOurDatabaseButton.setMaximumSize(new Dimension(250, 45));
+        useOurDatabaseButton.setPreferredSize(new Dimension(250, 45));
+        useOurDatabaseButton.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        useOurDatabaseButton.addActionListener(e -> loadOurDatabase());
+        panel.add(useOurDatabaseButton);
+
+        panel.add(Box.createVerticalStrut(10));
+
+        JButton resetDatabaseButton = new JButton("🔴 Reset Database");
+        resetDatabaseButton.setFont(new Font("Arial", Font.BOLD, 12));
+        resetDatabaseButton.setBackground(new Color(231, 76, 60));
+        resetDatabaseButton.setForeground(Color.WHITE);
+        resetDatabaseButton.setOpaque(true);
+        resetDatabaseButton.setBorderPainted(false);
+        resetDatabaseButton.setMaximumSize(new Dimension(250, 45));
+        resetDatabaseButton.setPreferredSize(new Dimension(250, 45));
+        resetDatabaseButton.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        resetDatabaseButton.addActionListener(e -> resetDatabase());
+        panel.add(resetDatabaseButton);
 
         panel.add(Box.createVerticalGlue());
 
@@ -320,6 +361,164 @@ public class DisasterManagementPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "Error resetting disasters: " + e.getMessage(), 
                     "Error", JOptionPane.ERROR_MESSAGE);
                 statusLabel.setText("✗ Error: " + e.getMessage());
+            }
+        }
+    }
+
+    private void loadOurDatabase() {
+        int confirmResult = JOptionPane.showConfirmDialog(this, 
+            "This will replace all your current data with our curated database.\n" +
+            "Your current data will be lost. Continue?",
+            "Load Our Database",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+        
+        if (confirmResult != JOptionPane.YES_OPTION) {
+            statusLabel.setText("⊘ Database load cancelled");
+            return;
+        }
+        
+        try {
+            DatabaseLoader.loadOurDatabase(model);
+            
+            String loadMsg = "✓ Curated database loaded successfully!\n" +
+                            "Posts: " + model.getPosts().size() + "\n";
+            
+            statusLabel.setText(loadMsg);
+            JOptionPane.showMessageDialog(this, loadMsg, "Database Loaded", JOptionPane.INFORMATION_MESSAGE);
+            
+            refreshDisasterList();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error loading database: " + e.getMessage(), 
+                "Error", JOptionPane.ERROR_MESSAGE);
+            statusLabel.setText("✗ Error: " + e.getMessage());
+        }
+    }
+
+    private void resetDatabase() {
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "This will delete the entire database file and create a new empty one.\nAll data will be lost. Continue?",
+            "Reset Database",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                try {
+                    DatabaseManager tempManager = new DatabaseManager();
+                    tempManager.close();
+                } catch (Exception e) {
+                }
+                
+                Thread.sleep(300);
+                
+                String currentDir = System.getProperty("user.dir");
+                File projectRoot = new File(currentDir);
+                while (projectRoot != null && !projectRoot.getName().equals("OOP_Project")) {
+                    projectRoot = projectRoot.getParentFile();
+                }
+                
+                String basePath;
+                if (projectRoot != null) {
+                    basePath = projectRoot.getAbsolutePath() + "/humanitarian-logistics/data";
+                } else {
+                    if (currentDir.endsWith("humanitarian-logistics")) {
+                        basePath = currentDir + "/data";
+                    } else {
+                        basePath = currentDir + "/humanitarian-logistics/data";
+                    }
+                }
+                
+                File dataDir = new File(basePath);
+                if (!dataDir.exists()) {
+                    dataDir.mkdirs();
+                }
+                
+                String dbPath = basePath + "/humanitarian_logistics_user.db";
+                File dbFile = new File(dbPath);
+                
+                if (dbFile.exists()) {
+                    if (!dbFile.delete()) {
+                        throw new Exception("Failed to delete old database file");
+                    }
+                }
+                
+                File walFile = new File(dbPath + "-wal");
+                if (walFile.exists()) {
+                    walFile.delete();
+                }
+                
+                File shmFile = new File(dbPath + "-shm");
+                if (shmFile.exists()) {
+                    shmFile.delete();
+                }
+                
+                File journalFile = new File(dbPath + "-journal");
+                if (journalFile.exists()) {
+                    journalFile.delete();
+                }
+                
+                Thread.sleep(200);
+
+                try {
+                    Class.forName("org.sqlite.JDBC");
+                    java.sql.Connection conn = java.sql.DriverManager.getConnection(
+                        "jdbc:sqlite:" + dbPath
+                    );
+                    conn.setAutoCommit(false);
+                    try (java.sql.Statement stmt = conn.createStatement()) {
+                        stmt.execute("PRAGMA foreign_keys = ON");
+                        stmt.execute("CREATE TABLE IF NOT EXISTS posts (" +
+                            "post_id TEXT PRIMARY KEY," +
+                            "content TEXT," +
+                            "author TEXT," +
+                            "source TEXT," +
+                            "created_at TEXT," +
+                            "sentiment TEXT," +
+                            "confidence REAL," +
+                            "relief_category TEXT," +
+                            "disaster_keyword TEXT)");
+                        
+                        stmt.execute("CREATE TABLE IF NOT EXISTS comments (" +
+                            "comment_id TEXT PRIMARY KEY," +
+                            "post_id TEXT," +
+                            "content TEXT," +
+                            "author TEXT," +
+                            "created_at TEXT," +
+                            "sentiment TEXT," +
+                            "confidence REAL," +
+                            "relief_category TEXT," +
+                            "disaster_type TEXT," +
+                            "FOREIGN KEY(post_id) REFERENCES posts(post_id) ON DELETE CASCADE)");
+                        
+                        conn.commit();
+                    }
+                    conn.close();
+                    
+                    statusLabel.setText("✓ Database reset successfully");
+                    
+                    model.clearPosts();
+                    model.resetDatabaseConnection();
+                    
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "✓ Database reset successfully!\n\nOld file deleted and new empty database created.",
+                        "Reset Complete",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                } catch (Exception dbEx) {
+                    throw new Exception("Failed to create new database: " + dbEx.getMessage());
+                }
+            } catch (Exception ex) {
+                statusLabel.setText("❌ Error during reset: " + ex.getMessage());
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Error during database reset: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
             }
         }
     }

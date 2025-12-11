@@ -179,18 +179,6 @@ public class DataCollectionPanel extends JPanel {
         saveButton.addActionListener(e -> savePostWithComments());
         buttonPanel.add(saveButton);
 
-        JButton useOurDatabaseButton = new JButton("📚 Use Our Database");
-        useOurDatabaseButton.setPreferredSize(new Dimension(180, 35));
-        useOurDatabaseButton.setFont(new Font("Arial", Font.BOLD, 12));
-        useOurDatabaseButton.setBackground(new Color(34, 139, 34));
-        useOurDatabaseButton.setForeground(Color.WHITE);
-        useOurDatabaseButton.setOpaque(true);
-        useOurDatabaseButton.setBorderPainted(false);
-        useOurDatabaseButton.setFocusPainted(false);
-        useOurDatabaseButton.setContentAreaFilled(true);
-        useOurDatabaseButton.addActionListener(e -> loadOurDatabase());
-        buttonPanel.add(useOurDatabaseButton);
-
         panel.add(buttonPanel, BorderLayout.EAST);
         return panel;
     }
@@ -299,90 +287,6 @@ public class DataCollectionPanel extends JPanel {
         sentimentCombo.setSelectedItem(Sentiment.SentimentType.NEUTRAL);
         confidenceSpinner.setValue(0.8);
         statusLabel.setText("Form cleared");
-    }
-
-    private void loadOurDatabase() {
-        int confirmResult = JOptionPane.showConfirmDialog(this, 
-            "This will replace all your current data with our curated database.\n" +
-            "Your current data will be lost. Continue?",
-            "Load Our Database",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE);
-        
-        if (confirmResult != JOptionPane.YES_OPTION) {
-            statusLabel.setText("⊘ Database load cancelled");
-            return;
-        }
-        
-        try {
-
-            java.util.Set<String> userDisasters = new java.util.HashSet<>(
-                DisasterManager.getInstance().getAllDisasterNames()
-            );
-            
-            DatabaseLoader.loadOurDatabase(model);
-            
-            java.util.Set<String> missingDisasters = new java.util.HashSet<>();
-            
-            for (Post post : model.getPosts()) {
-
-                String disasterKeyword = post.getDisasterKeyword();
-                if (disasterKeyword != null && !disasterKeyword.isEmpty()) {
-                    String normalizedDisaster = DisasterType.normalize(disasterKeyword);
-                    
-                    if (!userDisasters.contains(normalizedDisaster) && 
-                        !missingDisasters.contains(normalizedDisaster)) {
-                        missingDisasters.add(normalizedDisaster);
-                    }
-                }
-                
-                for (Comment comment : post.getComments()) {
-                    checkAndCollectMissingDisasters(comment.getContent().toLowerCase(), 
-                        userDisasters, missingDisasters);
-                }
-            }
-            
-            int addedCount = 0;
-            for (String disaster : missingDisasters) {
-                DisasterManager.getInstance().getOrCreateDisasterType(disaster);
-                addedCount++;
-            }
-            
-            List<Post> posts = model.getPosts();
-            int totalPosts = posts.size();
-            int totalComments = posts.stream().mapToInt(p -> p.getComments().size()).sum();
-            
-            String loadMsg = "✓ Our database loaded successfully\n" +
-                            "Posts imported: " + totalPosts + "\n" +
-                            "Comments: " + totalComments + "\n" +
-                            "New disaster types added: " + addedCount;
-            
-            statusLabel.setText(loadMsg);
-            
-            try {
-                com.humanitarian.logistics.database.DatabaseManager dbMgr = new com.humanitarian.logistics.database.DatabaseManager();
-                for (Post post : model.getPosts()) {
-                    dbMgr.savePost(post);
-                    String disasterType = post.getDisasterKeyword();
-                    if (disasterType == null || disasterType.isEmpty()) {
-                        disasterType = "N/A";
-                    }
-                    for (Comment comment : post.getComments()) {
-                        comment.setDisasterType(disasterType);
-                        dbMgr.saveComment(comment);
-                    }
-                }
-                loadMsg += "\n✓ Data saved to database";
-            } catch (Exception dbEx) {
-                System.err.println("Warning: Data not saved to database: " + dbEx.getMessage());
-            }
-            
-            JOptionPane.showMessageDialog(this, loadMsg, "Database Loaded", JOptionPane.INFORMATION_MESSAGE);
-            
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error loading database: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            statusLabel.setText("✗ Error: " + e.getMessage());
-        }
     }
 
     private void updateDisasterTypeCombo() {

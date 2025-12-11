@@ -91,13 +91,6 @@ public class Model {
                 }
                 comment.setDisasterType(disasterType);
             }
-            try {
-                if (dbManager != null) {
-                    dbManager.updateComment(comment);
-                }
-            } catch (Exception e) {
-                System.err.println("Error saving comment to database: " + e.getMessage());
-            }
         }
 
         this.posts.add(post);

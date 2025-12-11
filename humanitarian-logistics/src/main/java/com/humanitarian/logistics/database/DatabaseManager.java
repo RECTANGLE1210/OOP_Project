@@ -210,25 +210,7 @@ public class DatabaseManager {
             pstmt.executeUpdate();
         }
         
-        String sql = "INSERT INTO comments VALUES(?,?,?,?,?,?,?,?,?)";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
-            pstmt.setString(1, comment.getCommentId());
-            pstmt.setString(2, comment.getPostId());
-            pstmt.setString(3, comment.getContent());
-            pstmt.setString(4, comment.getAuthor());
-            pstmt.setString(5, comment.getCreatedAt().toString());
-            pstmt.setString(6, comment.getSentiment() != null ? comment.getSentiment().getType().toString() : null);
-            pstmt.setDouble(7, comment.getSentiment() != null ? comment.getSentiment().getConfidence() : 0);
-            String updateReliefCategory = null;
-            if (comment.getReliefItem() != null && comment.getReliefItem().getCategory() != null) {
-                updateReliefCategory = comment.getReliefItem().getCategory().name();
-            }
-            pstmt.setString(8, updateReliefCategory);
-            pstmt.setString(9, comment.getDisasterType());
-            
-            pstmt.executeUpdate();
-            commit();
-        }
+        saveComment(comment);
     }
 
     private Post reconstructPost(ResultSet rs) throws SQLException {

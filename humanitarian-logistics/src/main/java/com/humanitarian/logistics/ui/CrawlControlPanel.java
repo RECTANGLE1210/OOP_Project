@@ -8,7 +8,9 @@ import java.awt.Font;
 import java.io.File;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
@@ -39,6 +41,7 @@ import com.humanitarian.logistics.model.Post;
 import com.humanitarian.logistics.model.ReliefItem;
 import com.humanitarian.logistics.model.Sentiment;
 import com.humanitarian.logistics.model.YouTubePost;
+import com.humanitarian.logistics.util.StringSimilarity;
 
 public class CrawlControlPanel extends JPanel {
     private static final Logger LOGGER = Logger.getLogger(CrawlControlPanel.class.getName());
@@ -52,9 +55,8 @@ public class CrawlControlPanel extends JPanel {
     private JButton crawlButton;
     private JTextArea postUrlField;
     private JButton crawlUrlButton;
-    private JComboBox<String> disasterTypeCombo;
-    private JButton addNewDisasterButton;
     private JComboBox<String> platformSelector;
+    private JComboBox<String> disasterTypeCombo;
     private String selectedCrawlerName = "YOUTUBE";
     private CrawlerRegistry crawlerRegistry = CrawlerRegistry.getInstance();
 
@@ -206,13 +208,6 @@ public class CrawlControlPanel extends JPanel {
         updateDisasterTypeCombo();
         disasterTypeCombo.setMaximumSize(new Dimension(250, 25));
         panel.add(disasterTypeCombo);
-        panel.add(Box.createVerticalStrut(5));
-
-        addNewDisasterButton = new JButton("+ Add New Disaster Type");
-        addNewDisasterButton.setFont(new Font("Arial", Font.PLAIN, 10));
-        addNewDisasterButton.setMaximumSize(new Dimension(250, 25));
-        addNewDisasterButton.addActionListener(e -> showAddDisasterDialog());
-        panel.add(addNewDisasterButton);
         panel.add(Box.createVerticalStrut(8));
 
         crawlUrlButton = new JButton("Crawl Videos from URLs");
@@ -238,20 +233,6 @@ public class CrawlControlPanel extends JPanel {
         mockButton.setContentAreaFilled(true);
         mockButton.addActionListener(e -> loadSampleData());
         panel.add(mockButton);
-
-        panel.add(Box.createVerticalStrut(8));
-
-        JButton resetDbButton = new JButton("Reset Database");
-        resetDbButton.setMaximumSize(new Dimension(250, 40));
-        resetDbButton.setFont(new Font("Arial", Font.BOLD, 12));
-        resetDbButton.setBackground(new Color(231, 76, 60));
-        resetDbButton.setForeground(Color.WHITE);
-        resetDbButton.setOpaque(true);
-        resetDbButton.setBorderPainted(false);
-        resetDbButton.setFocusPainted(false);
-        resetDbButton.setContentAreaFilled(true);
-        resetDbButton.addActionListener(e -> resetDatabase());
-        panel.add(resetDbButton);
 
         panel.add(Box.createVerticalGlue());
 
@@ -316,12 +297,13 @@ public class CrawlControlPanel extends JPanel {
                 String crawlerDisplayName = config != null ? config.displayName : selectedCrawlerName;
                 
                 crawlResultsArea.setText("Starting " + crawlerDisplayName + " crawl...\n");
-                crawlResultsArea.append("Post Limit: " + postLimit + "\n");
+                crawlResultsArea.append("Post Limit per Keyword: " + postLimit + "\n");
                 crawlResultsArea.append("Comment Limit per Post: " + commentLimit + "\n");
                 crawlResultsArea.append("Keywords: " + String.join(", ", hashtags) + "\n");
                 crawlResultsArea.append("-".repeat(60) + "\n\n");
 
                 List<Post> posts = new ArrayList<>();
+                Map<String, String> postKeywordMap = new HashMap<>();
                 boolean usedRealCrawler = false;
                 
                 try {
@@ -335,9 +317,18 @@ public class CrawlControlPanel extends JPanel {
                     if (crawler.isInitialized() || !config.requiresInitialization) {
                         crawlResultsArea.append("✓ Crawler initialized\n");
                         crawlResultsArea.append("Crawling...\n\n");
-                        posts = crawler.crawlPosts(hashtags, new ArrayList<>(), postLimit);
+                        
+                        for (String keyword : hashtags) {
+                            List<Post> keywordPosts = crawler.crawlPosts(new ArrayList<>(List.of(keyword)), new ArrayList<>(), postLimit);
+                            for (Post post : keywordPosts) {
+                                postKeywordMap.put(post.getPostId(), keyword);
+                            }
+                            posts.addAll(keywordPosts);
+                            crawlResultsArea.append("  ✓ Keyword '" + keyword + "': " + keywordPosts.size() + " posts\n");
+                        }
+                        
                         usedRealCrawler = true;
-                        crawlResultsArea.append("✓ Successfully crawled " + posts.size() + " items from " + crawlerDisplayName + "\n\n");
+                        crawlResultsArea.append("\n✓ Successfully crawled " + posts.size() + " total items from " + crawlerDisplayName + "\n\n");
                     }
                     
                     if (posts.isEmpty() && usedRealCrawler) {
@@ -358,11 +349,46 @@ public class CrawlControlPanel extends JPanel {
                     }
                 }
 
+                List<String> disasterNames = DisasterManager.getInstance().getAllDisasterNames();
+                
                 for (Post post : posts) {
+                    String matchedDisasterName = null;
 
-                    DisasterType disasterType = CrawlingUtility.findDisasterTypeForPost(post, hashtags);
+                    // First, try to use the specific keyword that this post came from
+                    String sourceKeyword = postKeywordMap.getOrDefault(post.getPostId(), null);
+                    if (sourceKeyword != null) {
+                        // Use only the keyword that was used to crawl this specific post
+                        DisasterType disasterType = CrawlingUtility.findDisasterTypeForPost(post, new ArrayList<>(List.of(sourceKeyword)));
+                        if (disasterType != null) {
+                            matchedDisasterName = disasterType.getName();
+                        } else {
+                            // If not found by exact keyword match, try similarity matching
+                            matchedDisasterName = matchKeywordToDisaster(sourceKeyword, disasterNames);
+                        }
+                    }
+                    
+                    // If still not matched, try broader matching with all keywords
+                    if (matchedDisasterName == null) {
+                        matchedDisasterName = findBestDisasterForPost(post, hashtags, disasterNames);
+                    }
+
+                    if (matchedDisasterName == null && !disasterNames.isEmpty()) {
+                        matchedDisasterName = disasterNames.get(0);
+                    }
+
+                    for (Comment comment : post.getComments()) {
+                        if (matchedDisasterName != null) {
+                            comment.setDisasterType(matchedDisasterName);
+                        }
+                    }
+
                     if (post instanceof YouTubePost) {
-                        ((YouTubePost) post).setDisasterType(disasterType);
+                        if (matchedDisasterName != null) {
+                            DisasterType dt = DisasterManager.getInstance().getDisasterType(matchedDisasterName);
+                            if (dt != null) {
+                                ((YouTubePost) post).setDisasterType(dt);
+                            }
+                        }
                     }
                     model.addPost(post);
                 }
@@ -458,9 +484,12 @@ public class CrawlControlPanel extends JPanel {
                         youtubeCrawler.shutdown();
                         
                         if (post != null) {
-
                             if (post instanceof YouTubePost) {
                                 ((YouTubePost) post).setDisasterType(selectedDisaster);
+                            }
+                            
+                            for (Comment comment : post.getComments()) {
+                                comment.setDisasterType(selectedDisasterName);
                             }
                             
                             crawlResultsArea.append("  ✓ Success: " + post.getComments().size() + " comments extracted\n");
@@ -504,7 +533,6 @@ public class CrawlControlPanel extends JPanel {
                 crawlResultsArea.append("\n✗ Error during crawling: " + e.getMessage());
                 statusLabel.setText("✗ Error: " + e.getMessage());
                 progressBar.setIndeterminate(false);
-                System.err.println("Crawling error: " + e.getMessage());
             } finally {
                 crawlUrlButton.setEnabled(true);
             }
@@ -630,216 +658,56 @@ public class CrawlControlPanel extends JPanel {
         }
     }
 
-    private void showAddDisasterDialog() {
-        JDialog dialog = new JDialog();
-        dialog.setTitle("Add New Disaster Type");
-        dialog.setModal(true);
-        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        dialog.setSize(400, 200);
-        dialog.setLocationRelativeTo(this);
+    private String findBestDisasterForPost(Post post, List<String> keywords, List<String> disasterNames) {
+        if (disasterNames == null || disasterNames.isEmpty()) {
+            return null;
+        }
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        String postContent = (post.getContent() + " " + post.getAuthor()).toLowerCase();
+        String bestMatch = null;
+        double bestScore = 0.45;
 
-        panel.add(new JLabel("Disaster Type Name:"));
-        JTextField nameField = new JTextField();
-        nameField.setMaximumSize(new Dimension(350, 30));
-        panel.add(nameField);
-        panel.add(Box.createVerticalStrut(10));
+        for (String keyword : keywords) {
+            String cleanKeyword = keyword.toLowerCase().replaceAll("[#]", "").trim();
+            if (cleanKeyword.isEmpty()) continue;
 
-        panel.add(new JLabel("Keywords/Aliases (comma-separated):"));
-        JTextArea aliasesArea = new JTextArea(3, 40);
-        aliasesArea.setLineWrap(true);
-        aliasesArea.setWrapStyleWord(true);
-        JScrollPane scrollPane = new JScrollPane(aliasesArea);
-        scrollPane.setMaximumSize(new Dimension(350, 80));
-        panel.add(scrollPane);
-        panel.add(Box.createVerticalStrut(10));
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
-
-        JButton addButton = new JButton("Add to Database");
-        addButton.addActionListener(e -> {
-            String name = nameField.getText().trim();
-            String aliases = aliasesArea.getText().trim();
-
-            if (name.isEmpty()) {
-                JOptionPane.showMessageDialog(dialog, "Please enter a disaster type name", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            DisasterType newDisaster = DisasterManager.getInstance().getOrCreateDisasterType(name);
-            
-            if (!aliases.isEmpty()) {
-                String[] aliasArray = aliases.split(",");
-                for (String alias : aliasArray) {
-                    newDisaster.addAlias(alias.trim());
-                }
-            }
-
-            updateDisasterTypeCombo();
-            disasterTypeCombo.setSelectedItem(name);
-
-            JOptionPane.showMessageDialog(dialog, "✓ Disaster type '" + name + "' added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-            dialog.dispose();
-        });
-
-        JButton cancelButton = new JButton("Cancel");
-        cancelButton.addActionListener(e -> dialog.dispose());
-
-        buttonPanel.add(addButton);
-        buttonPanel.add(Box.createHorizontalStrut(10));
-        buttonPanel.add(cancelButton);
-        panel.add(buttonPanel);
-
-        dialog.add(panel);
-        dialog.setVisible(true);
-    }
-
-    @SuppressWarnings("unused")
-    
-    private void resetDatabase() {
-        int confirm = JOptionPane.showConfirmDialog(
-            this,
-            "This will delete the entire database file and create a new empty one.\nAll data will be lost. Continue?",
-            "Reset Database",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE
-        );
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            try {
-
-                try {
-
-                    DatabaseManager tempManager = new DatabaseManager();
-                    tempManager.close();
-                } catch (Exception e) {
-                }
-                
-                Thread.sleep(300);
-                
-                String currentDir = System.getProperty("user.dir");
-                File projectRoot = new File(currentDir);
-                while (projectRoot != null && !projectRoot.getName().equals("OOP_Project")) {
-                    projectRoot = projectRoot.getParentFile();
-                }
-                
-                String basePath;
-                if (projectRoot != null) {
-                    basePath = projectRoot.getAbsolutePath() + "/humanitarian-logistics/data";
-                } else {
-                    if (currentDir.endsWith("humanitarian-logistics")) {
-                        basePath = currentDir + "/data";
-                    } else {
-                        basePath = currentDir + "/humanitarian-logistics/data";
+            if (postContent.contains(cleanKeyword)) {
+                String matchedDisaster = StringSimilarity.findMostSimilar(cleanKeyword, disasterNames);
+                if (matchedDisaster != null) {
+                    double score = StringSimilarity.levenshteinSimilarity(cleanKeyword, matchedDisaster);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMatch = matchedDisaster;
                     }
                 }
-                
-                File dataDir = new File(basePath);
-                if (!dataDir.exists()) {
-                    dataDir.mkdirs();
-                }
-                
-                String dbPath = basePath + "/humanitarian_logistics_user.db";
-                File dbFile = new File(dbPath);
-                
-                if (dbFile.exists()) {
-                    if (!dbFile.delete()) {
-                        throw new Exception("Failed to delete old database file");
-                    }
-                    System.out.println("Deleted main DB file: " + dbPath);
-                }
-                
-                File walFile = new File(dbPath + "-wal");
-                if (walFile.exists()) {
-                    walFile.delete();
-                    System.out.println("Deleted WAL file: " + dbPath + "-wal");
-                }
-                
-                File shmFile = new File(dbPath + "-shm");
-                if (shmFile.exists()) {
-                    shmFile.delete();
-                    System.out.println("Deleted SHM file: " + dbPath + "-shm");
-                }
-                
-                File journalFile = new File(dbPath + "-journal");
-                if (journalFile.exists()) {
-                    journalFile.delete();
-                    System.out.println("Deleted journal file: " + dbPath + "-journal");
-                }
-                
-                Thread.sleep(200);
-
-                try {
-                    Class.forName("org.sqlite.JDBC");
-                    java.sql.Connection conn = java.sql.DriverManager.getConnection(
-                        "jdbc:sqlite:" + dbPath
-                    );
-                    conn.setAutoCommit(false);
-                    try (java.sql.Statement stmt = conn.createStatement()) {
-                        
-                        stmt.execute("PRAGMA foreign_keys = ON");
-                        
-                        stmt.execute("CREATE TABLE IF NOT EXISTS posts (" +
-                            "post_id INTEGER PRIMARY KEY, " +
-                            "title TEXT NOT NULL, " +
-                            "content TEXT NOT NULL, " +
-                            "author TEXT, " +
-                            "posted_at TEXT, " +
-                            "source TEXT" +
-                            ")");
-                        
-                        stmt.execute("CREATE TABLE IF NOT EXISTS comments (" +
-                            "comment_id INTEGER PRIMARY KEY, " +
-                            "post_id INTEGER NOT NULL, " +
-                            "content TEXT NOT NULL, " +
-                            "author TEXT, " +
-                            "created_at TEXT, " +
-                            "sentiment_type TEXT, " +
-                            "sentiment_confidence REAL, " +
-                            "relief_category TEXT, " +
-                            "FOREIGN KEY(post_id) REFERENCES posts(post_id) ON DELETE CASCADE" +
-                            ")");
-                        
-                        conn.commit();
-                        System.out.println("Database schema committed successfully");
-                        
-                        statusLabel.setText("✓ Database reset successfully");
-                        crawlResultsArea.setText("Database has been reset.\n");
-                        crawlResultsArea.append("✓ Old file deleted: " + dbPath + "\n");
-                        crawlResultsArea.append("✓ WAL/SHM/Journal files cleaned\n");
-                        crawlResultsArea.append("✓ New empty database created with fresh schema\n");
-                        
-                        model.clearPosts();
-                        
-                        model.resetDatabaseConnection();
-                        
-                        JOptionPane.showMessageDialog(
-                            this,
-                            "✓ Database reset successfully!\n\nOld file deleted and new empty database created.",
-                            "Reset Complete",
-                            JOptionPane.INFORMATION_MESSAGE
-                        );
-                    }
-                    conn.close();
-                    System.out.println("Database connection closed");
-                } catch (Exception dbEx) {
-                    System.err.println("Database creation error: " + dbEx.getMessage());
-                    throw new Exception("Failed to create new database: " + dbEx.getMessage());
-                }
-            } catch (Exception ex) {
-                System.err.println("Reset database error: " + ex.getMessage());
-                statusLabel.setText("❌ Error during reset: " + ex.getMessage());
-                JOptionPane.showMessageDialog(
-                    this,
-                    "Error during database reset: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE
-                );
             }
         }
+
+        if (bestMatch == null && !keywords.isEmpty()) {
+            for (String keyword : keywords) {
+                String cleanKeyword = keyword.toLowerCase().replaceAll("[#]", "").trim();
+                if (!cleanKeyword.isEmpty()) {
+                    String matchedDisaster = StringSimilarity.findMostSimilar(cleanKeyword, disasterNames);
+                    if (matchedDisaster != null) {
+                        bestMatch = matchedDisaster;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return bestMatch;
     }
+
+    private String matchKeywordToDisaster(String keyword, List<String> disasterNames) {
+        if (keyword == null || keyword.isEmpty() || disasterNames == null || disasterNames.isEmpty()) {
+            return null;
+        }
+        
+        String cleanKeyword = keyword.toLowerCase().replaceAll("[#]", "").trim();
+        return StringSimilarity.findMostSimilar(cleanKeyword, disasterNames);
+    }
+
 }
+
+
