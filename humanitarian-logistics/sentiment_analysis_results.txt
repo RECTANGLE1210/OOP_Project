@@ -2559,3 +2559,9 @@ còn kể hết nỗi đau của mình >:(...' | Result: NEGATIVE (confidence: 0
 [2025-12-11 17:51:38] 📊 SENTIMENT ANALYSIS | Text: 'Nguyên 1 cơn bão tàn phá cũng chỉ ngang tâm vài cái đường lớn các cụ xây thôi :))))...' | Result: NEGATIVE (confidence: 0.2870, raw: 1 STAR)
 [2025-12-11 17:51:38] 📊 SENTIMENT ANALYSIS | Text: 'Bão Sơn Tinh (Thuỷ Tinh sau khi coi video)...' | Result: NEUTRAL (confidence: 0.2344, raw: 3 STARS)
 [2025-12-11 17:51:38] 📊 SENTIMENT ANALYSIS | Text: 'Sắp tới MATMO nữa nè,mong là bão MATMO tan luôn ở ngoài biển 😢...' | Result: NEGATIVE (confidence: 0.3246, raw: 2 STARS)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-12 00:24:54
+================================================================================
+
+[2025-12-12 00:24:56] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)

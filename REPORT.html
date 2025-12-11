@@ -710,11 +710,10 @@ representing the domain model with no dependencies on other
 packages.</p>
 <p><strong>User Interface Layer</strong> (UI Package): Implements the
 Model-View-Controller architectural pattern using Swing components
-organized into specialized panels (DataCollectionPanel, AnalysisPanel,
-AdvancedAnalysisPanel, CommentManagementPanel, DisasterManagementPanel).
+organized into specialized panels (AdvancedAnalysisPanel, CommentManagementPanel, CrawlControlPanel, DataCollectionPanel).
 The UI automatically updates when underlying data changes through the
 Observer pattern.</p>
-<p><strong>Data Collection Layer</strong> (Crawler Package): Provides pluggable data sources through the Strategy pattern. Implements two main crawlers: YouTubeCrawler (fetches YouTube watch pages using Java HttpClient, parses HTML with regex patterns to extract video metadata and comments) and MockDataCrawler (generates synthetic posts for testing without requiring internet access). The Registry pattern enables dynamic crawler registration and runtime discovery. Note: YouTubeAPIHelper class exists for potential YouTube Data API v3 integration but is not currently used by the active crawlers.</p>
+<p><strong>Data Collection Layer</strong> (Crawler Package): Provides pluggable data sources through the Strategy pattern. Implements two main crawlers: YouTubeCrawler (fetches YouTube watch pages using Java HttpClient, parses HTML with regex patterns to extract video metadata and comments) and MockDataCrawler (generates sample posts without requiring internet access). The Registry pattern enables dynamic crawler registration and runtime discovery. Note: YouTubeAPIHelper class exists for potential YouTube Data API v3 integration but is not currently used by the active crawlers.</p>
 <p><strong>Sentiment Analysis Layer</strong> (Sentiment Package): Offers
 multiple sentiment analysis strategies ranging from simple keyword-based
 approaches to advanced machine learning models. Users can select the
@@ -1436,9 +1435,9 @@ text, sentiment, relief category, disaster type - Click
 by clicking rows - Click <strong>“Delete”</strong> button - Confirm
 deletion - Comments permanently removed from database</p>
 <p><strong>3. Use Our Database</strong> - Click <strong>“Use Our
-Database”</strong> to load pre-built sample database - Contains 31
+Database”</strong> to load pre-built sample database - Contains
 pre-curated posts from humanitarian logistics scenarios - Useful for:
-testing analysis, understanding patterns, demonstrating system -
+understanding patterns, demonstrating system capabilities -
 <strong>Warning</strong>: Replaces current database with sample
 dataset</p>
 <p><strong>4. Reset Database</strong> - Click <strong>“Reset
