@@ -1,11 +1,14 @@
 package com.humanitarian.logistics.ui;
 
-import com.humanitarian.logistics.model.*;
-import com.humanitarian.logistics.crawler.DataCrawler;
-import javax.swing.*;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
+
+import com.humanitarian.logistics.model.Comment;
+import com.humanitarian.logistics.model.DisasterManager;
+import com.humanitarian.logistics.model.DisasterType;
+import com.humanitarian.logistics.model.Post;
+import com.humanitarian.logistics.model.Sentiment;
 
 public class CrawlingUtility {
     private static final Logger LOGGER = Logger.getLogger(CrawlingUtility.class.getName());

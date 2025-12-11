@@ -24,11 +24,9 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 
-import com.humanitarian.logistics.database.DatabaseLoader;
 import com.humanitarian.logistics.model.Comment;
 import com.humanitarian.logistics.model.DisasterManager;
 import com.humanitarian.logistics.model.DisasterType;
-import com.humanitarian.logistics.model.Post;
 import com.humanitarian.logistics.model.ReliefItem;
 import com.humanitarian.logistics.model.Sentiment;
 import com.humanitarian.logistics.model.YouTubePost;

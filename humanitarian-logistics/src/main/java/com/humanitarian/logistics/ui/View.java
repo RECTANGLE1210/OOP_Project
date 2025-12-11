@@ -1,9 +1,21 @@
 package com.humanitarian.logistics.ui;
 
-import com.humanitarian.logistics.model.*;
-import javax.swing.*;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.Font;
 import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSeparator;
+import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
+
+import com.humanitarian.logistics.model.Post;
 
 public class View extends JFrame implements ModelListener {
     private Model model;

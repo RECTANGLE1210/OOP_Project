@@ -1,14 +1,38 @@
 package com.humanitarian.logistics.ui;
 
-import com.humanitarian.logistics.model.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.table.DefaultTableModel;
+
 import com.humanitarian.logistics.database.DatabaseLoader;
 import com.humanitarian.logistics.database.DatabaseManager;
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
-import java.io.File;
-import java.util.List;
-import java.util.*;
+import com.humanitarian.logistics.model.Comment;
+import com.humanitarian.logistics.model.DisasterManager;
+import com.humanitarian.logistics.model.DisasterType;
+import com.humanitarian.logistics.model.Post;
+import com.humanitarian.logistics.model.YouTubePost;
 
 public class DisasterManagementPanel extends JPanel {
     private Model model;
