@@ -1,8 +1,14 @@
 # Build artifacts
-target/
+humanitarian-logistics/target/archive-tmp
+humanitarian-logistics/target/classes/
+humanitarian-logistics/target/generated-sources/
+humanitarian-logistics/target/m2e-wtp/
+humanitarian-logistics/target/test-classes/
+humanitarian-logistics/target/tomcat/
+humanitarian-logistics/target/maven-status/
+humanitarian-logistics/target/maven-archiver
 build/
 *.class
-*.jar
 *.war
 *.ear
 *.zip
@@ -72,3 +78,9 @@ npm-debug.log
 # virtual machine crash logs
 hs_err_pid*
 replay_pid*
+
+diagram
+OOP_ANALYSIS_HUMANITARIAN_LOGISTICS_UI.md
+ADVANCED_OOP_DOCUMENTATION_UPDATE.md
+TECH_STACK_AND_ALGORITHMS.md
+USER_GUIDE.md
