@@ -2021,7 +2021,6 @@ classDiagram
     class DataCollectionPanel {
         -JTabbedPane tabbedPane
         -CrawlControlPanel crawlPanel
-        -DisasterManagementPanel disasterPanel
         +DataCollectionPanel(Model model)
         +JTabbedPane getTabbedPane()
     }
@@ -2032,15 +2031,6 @@ classDiagram
         +CommentManagementPanel(Model model)
         +void refreshCommentTable()
         +void loadComments()
-    }
-
-    class DisasterManagementPanel {
-        -JComboBox disasterComboBox
-        -JTable disasterTable
-        -DisasterManager disasterManager
-        +DisasterManagementPanel()
-        +void refreshDisasterList()
-        +void addDisasterType(String name)
     }
 
     class AnalysisPanel {
@@ -2083,12 +2073,6 @@ classDiagram
         +void onDataUpdated()
     }
 
-    class ChartsUtility {
-        +static JPanel createSentimentChart(List~Comment~ comments)
-        +static JPanel createDisasterChart(List~Post~ posts)
-        +static JPanel createTimeSeriesChart(List~Comment~ comments)
-    }
-
     class CrawlingUtility {
         +static void addCommentsToPost(Post post, int commentLimit)
         +static DisasterType findDisasterTypeForPost(Post post, List~String~ keywords)
@@ -2096,9 +2080,7 @@ classDiagram
     }
 
     DataCollectionPanel &quot;1&quot; *-- &quot;1&quot; CrawlControlPanel
-    DataCollectionPanel &quot;1&quot; *-- &quot;1&quot; DisasterManagementPanel
     CommentManagementPanel &quot;1&quot; --&gt; &quot;1&quot; Model
-    DisasterManagementPanel &quot;1&quot; --&gt; &quot;1&quot; DisasterManager
     AnalysisPanel &quot;1&quot; --&gt; &quot;1&quot; Model
     AdvancedAnalysisPanel &quot;1&quot; --&gt; &quot;1&quot; Model
     View &quot;1&quot; *-- &quot;1&quot; AnalysisPanel
@@ -2138,10 +2120,6 @@ over specified time periods.</p></li>
 of all collected comments with their associated metadata including
 sentiment scores, relief categories, and disaster type
 classifications.</p></li>
-<li><p><strong>DisasterManagementPanel</strong>: Provides administrative
-controls for managing disaster type definitions, allowing users to add
-new disaster types and configure aliases for flexible disaster
-matching.</p></li>
 </ul>
 <p><strong>Observer Pattern and Reactive Updates</strong>: The system
 employs the Observer pattern through the ModelListener interface. When
@@ -2149,7 +2127,7 @@ the Model’s state changes (new posts added, comments updated, sentiment
 analyzed), it automatically notifies all registered listeners without
 them needing to poll for updates. This creates a reactive, event-driven
 system where UI components automatically reflect the current state of
-the data. Utility classes such as ChartsUtility and CrawlingUtility
+the data. Utility classes such as CrawlingUtility
 provide reusable functionality for generating visualizations and
 collecting data-related metadata.</p>
 <p><strong>Design Benefits</strong>: The decomposition of the UI into
@@ -2176,15 +2154,7 @@ classDiagram
         +Sentiment analyzeSentiment(Comment comment)
     }
 
-    class SimpleSentimentAnalyzer {
-        -Map~String, Double~ sentimentLexicon
-        +SimpleSentimentAnalyzer()
-        +Sentiment analyzeSentiment(String text)
-        +Sentiment analyzeSentiment(Comment comment)
-    }
-
     class EnhancedSentimentAnalyzer {
-        -SimpleSentimentAnalyzer simpleAnalyzer
         -Map~String, String~ emoticons
         +EnhancedSentimentAnalyzer()
         +Sentiment analyzeSentiment(String text)
@@ -2208,10 +2178,8 @@ classDiagram
         -String parseOutput(String jsonOutput)
     }
 
-    SentimentAnalyzer &lt;|.. SimpleSentimentAnalyzer
-    SentimentAnalyzer &lt;|.. EnhancedSentimentAnalyzer
-    SentimentAnalyzer &lt;|.. PythonSentimentAnalyzer
-    EnhancedSentimentAnalyzer &quot;1&quot; --&gt; &quot;1&quot; SimpleSentimentAnalyzer
+    SentimentAnalyzer <|.. EnhancedSentimentAnalyzer
+    SentimentAnalyzer <|.. PythonSentimentAnalyzer
 </div>
 <p><strong>Strategy Pattern Implementation</strong>: The
 SentimentAnalyzer interface defines a contract that all sentiment
@@ -2219,16 +2187,9 @@ analysis implementations must follow. This interface-based design
 enables runtime selection of different analysis strategies without
 requiring code modifications. The primary implementations include:</p>
 <ul>
-<li><p><strong>SimpleSentimentAnalyzer</strong>: Implements a
-lightweight keyword-based approach that maintains a lexicon of positive
-and negative words. This analyzer is fast to execute and suitable for
-scenarios where performance is prioritized over maximum
-accuracy.</p></li>
-<li><p><strong>EnhancedSentimentAnalyzer</strong>: Extends the simple
-approach by incorporating emoticon detection and expanded keyword
-dictionaries. It internally uses SimpleSentimentAnalyzer while
-augmenting the analysis with additional signal sources like emoticons
-and emojis, providing a good balance between accuracy and
+<li><p><strong>EnhancedSentimentAnalyzer</strong>: Implements keyword-based
+sentiment analysis with emoticon detection and expanded keyword
+dictionaries, providing a good balance between accuracy and
 performance.</p></li>
 <li><p><strong>PythonSentimentAnalyzer</strong>: Interfaces with a
 machine learning model (xlm-roberta) running in a Python backend
@@ -2243,14 +2204,14 @@ matching.</p></li>
 </ul>
 <p><strong>Runtime Flexibility</strong>: The beauty of the Strategy
 pattern is evident in how the Model class can switch between analyzers
-at runtime. The application could start with SimpleSentimentAnalyzer for
-fast initial processing, then seamlessly switch to
+at runtime. The application uses EnhancedSentimentAnalyzer for
+keyword-based processing, then seamlessly switches to
 PythonSentimentAnalyzer for more accurate analysis once users request
 higher precision. This can be accomplished with a single line of
 code:</p>
 <div class="sourceCode" id="cb17"><pre
 class="sourceCode java"><code class="sourceCode java"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>model<span class="op">.</span><span class="fu">setSentimentAnalyzer</span><span class="op">(</span><span class="kw">new</span> <span class="fu">PythonSentimentAnalyzer</span><span class="op">());</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co">// No other code changes required</span></span></code></pre></div>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co">// Switch analyzers at runtime</span></span></code></pre></div>
 <p><strong>Extensibility and Maintainability</strong>: To add a new
 sentiment analysis approach (such as Google Cloud Natural Language API
 or OpenAI GPT-based analysis), developers only need to implement the
@@ -2715,8 +2676,7 @@ View class (150 lines) - Main container and layout
 ├─ DataCollectionPanel (300 lines) - Data input management
 ├─ AnalysisPanel (400 lines) - Problem 1 analysis
 ├─ AdvancedAnalysisPanel (500 lines) - Problem 2 analysis
-├─ CommentManagementPanel (250 lines) - Comment viewing
-└─ DisasterManagementPanel (200 lines) - Disaster management
+└─ CommentManagementPanel (250 lines) - Comment viewing
 Result: Easy to maintain, test, and modify</code></pre>
 <p><strong>Observer Pattern Implementation</strong>: The system employs
 the Observer design pattern through the ModelListener interface. Rather
@@ -2740,8 +2700,6 @@ panels.</p>
 <p><strong>Utility Class Organization</strong>: Reusable functionality
 is extracted into utility classes:</p>
 <ul>
-<li><strong>ChartsUtility</strong>: Centralized chart generation logic
-used by multiple analysis panels</li>
 <li><strong>CrawlingUtility</strong>: Data collection helper
 methods</li>
 <li><strong>InteractiveChartUtility</strong>: Interactive visualization
@@ -2756,8 +2714,7 @@ Sentiment Package with Strategy Pattern - Flexible Analysis</h4>
 enables runtime algorithm selection without code modification:</p>
 <p><strong>Strategy Hierarchy</strong>:</p>
 <pre><code>SentimentAnalyzer (interface)
-├─ SimpleSentimentAnalyzer (basic, fast)
-├─ EnhancedSentimentAnalyzer (intermediate)
+├─ EnhancedSentimentAnalyzer (keyword-based)
 └─ PythonSentimentAnalyzer (advanced, accurate)</code></pre>
 <p><strong>Runtime Switching Capability</strong>: The brilliance of this
 design is that the Model class never needs to know which specific
@@ -2774,7 +2731,7 @@ class="sourceCode java"><code class="sourceCode java"><span id="cb27-1"><a href=
 <span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> sentimentAnalyzer<span class="op">.</span><span class="fu">analyzeSentiment</span><span class="op">(</span>text<span class="op">);</span></span>
 <span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>Because of this interface-based dependency, the Model code remains
-unchanged whether we use SimpleSentimentAnalyzer,
+unchanged whether we use EnhancedSentimentAnalyzer,
 PythonSentimentAnalyzer, or a future GoogleCloudAnalyzer. This
 exemplifies the Dependency Inversion Principle - the Model depends on an
 abstraction (the interface) rather than concrete implementations.</p>
@@ -2903,7 +2860,7 @@ unrelated methods in PythonSentimentAnalyzer</td>
 <td><strong>D</strong> - Dependency Inversion</td>
 <td>Depend on abstractions, not implementations</td>
 <td>Model depends on SentimentAnalyzer interface; doesn’t depend on
-SimpleSentimentAnalyzer or PythonSentimentAnalyzer concrete classes</td>
+EnhancedSentimentAnalyzer or PythonSentimentAnalyzer concrete classes</td>
 </tr>
 </tbody>
 </table>
@@ -2987,13 +2944,14 @@ operations.</p>
     Sentiment analyzeSentiment(Comment comment);
 }
 
-public class SimpleSentimentAnalyzer implements SentimentAnalyzer {
+public class EnhancedSentimentAnalyzer implements SentimentAnalyzer {
     @Override
     public Sentiment analyzeSentiment(String text) {
         double score = 0;
         String[] words = text.toLowerCase().split("\\s+");
         for (String word : words) {
-            score += sentimentLexicon.getOrDefault(word, 0.0);
+            if (englishKeywords.contains(word)) score += 1.0;
+            if (vietnameseKeywords.contains(word)) score += 1.0;
         }
         String type = score > 0 ? "POSITIVE" : score < 0 ? "NEGATIVE" : "NEUTRAL";
         return new Sentiment(type, Math.min(Math.abs(score) / words.length, 1.0));
@@ -3043,7 +3001,6 @@ public class YouTubePost extends Post {
     
     public void switchAnalyzer(String analyzerType) {
         switch(analyzerType) {
-            case "simple": sentimentAnalyzer = new SimpleSentimentAnalyzer(); break;
             case "enhanced": sentimentAnalyzer = new EnhancedSentimentAnalyzer(); break;
             case "ml": sentimentAnalyzer = new PythonSentimentAnalyzer(); break;
         }
@@ -3088,7 +3045,7 @@ public interface ModelListener { void modelChanged(); }</code></pre>
 <h4 id="composition">7.1.7 Composition - Has-A Relationships</h4>
 
 <pre><code>public class Model {
-    private SentimentAnalyzer sentimentAnalyzer = new SimpleSentimentAnalyzer();
+    private SentimentAnalyzer sentimentAnalyzer = new EnhancedSentimentAnalyzer();
     private DatabaseManager dbManager = new DatabaseManager();
     private List&lt;Post&gt; posts = new ArrayList&lt;&gt;();
     private List&lt;ModelListener&gt; listeners = new ArrayList&lt;&gt;();
@@ -3312,7 +3269,6 @@ try (Connection conn = DriverManager.getConnection(dbUrl);
 
 <h3 id="ui-and-visualization">8.2 UI and Visualization</h3>
 
-<p><strong>Swing Framework</strong>: Zero external dependencies, mature, proven for complex desktop applications. Built-in since Java 1.1, no additional JARs needed. Application panels: DataCollectionPanel (manual post entry), AnalysisPanel (Problem 1 - satisfaction analysis), AdvancedAnalysisPanel (Problem 2 - temporal sentiment), CommentManagementPanel (CRUD operations), DisasterManagementPanel (disaster type management), CrawlControlPanel (crawler selection and execution).</p>
 
 <p><strong>JFreeChart 1.5.3</strong>: Professional charts including bar charts (category distributions), pie charts (satisfaction percentages), time-series charts (sentiment over time). Interactive features via mouse listeners enable drill-down analysis. Utility classes provide reusable chart generation without duplicated code.</p>
 
@@ -3364,7 +3320,7 @@ try (Connection conn = DriverManager.getConnection(dbUrl);
 
 <p><strong>Relief Category Classification</strong>: facebook/bart-large-mnli (BART - denoising autoencoder for sequence-to-sequence tasks). Zero-shot classification into relief categories: CASH, MEDICAL, SHELTER, FOOD, TRANSPORTATION. Model size: 1.6GB. Batch processing endpoint handles 31 posts in 1-2 seconds.</p>
 
-<p><strong>Python Service Architecture</strong>: sentiment_api.py runs Flask server on port 5001 with two endpoints: /sentiment (text → sentiment type + confidence), /category (text → relief category + keywords). Graceful fallback chain: Python ML → EnhancedSentimentAnalyzer (Vietnamese keyword detection + emoticon matching) → SimpleSentimentAnalyzer (basic keyword counting).</p>
+<p><strong>Python Service Architecture</strong>: sentiment_api.py runs Flask server on port 5001 with two endpoints: /sentiment (text → sentiment type + confidence), /category (text → relief category + keywords). Graceful fallback chain: Python ML → EnhancedSentimentAnalyzer (Vietnamese keyword detection + emoticon matching).</p>
 
 <h3 id="deployment-logging">8.7 Deployment &amp; Logging</h3>
 
