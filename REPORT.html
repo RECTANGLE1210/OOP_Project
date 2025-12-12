@@ -679,28 +679,24 @@ Stack</a></li>
 </nav>
 <h1 id="report-for-oop-humanitarian-logistic-project"><strong>REPORT FOR
 OOP HUMANITARIAN LOGISTIC PROJECT</strong></h1>
-<p><strong>Group 4</strong></p>
+<p><strong>GROUP 4</strong></p>
 <h2 id="overview">1.Overview</h2>
-<h3 id="project-objective-and-context">1.1 Project Objective and
-Context</h3>
-<p>The Humanitarian Logistics Analysis System is a comprehensive
-Java-based application designed to analyze and assess the effectiveness
-of humanitarian relief operations during disaster response scenarios.
-The system focuses on two primary research problems:</p>
-<p><strong>Problem 1 - Relief Item Effectiveness Analysis</strong>:
-Evaluating which categories of relief items (cash assistance, medical
-supplies, food aid, shelter provisions) receive the highest user
-satisfaction and positive sentiment from affected populations. This
-analysis enables humanitarian organizations to optimize their resource
-allocation strategies and improve the targeting of aid distribution.</p>
-<p><strong>Problem 2 - Temporal Sentiment Trend Analysis</strong>:
-Tracking how public sentiment and satisfaction with relief efforts
-evolve over time during the immediate aftermath and ongoing response to
-a disaster. Understanding temporal trends allows humanitarian
-organizations to identify critical periods when intervention may be most
-needed and adjust response strategies in real-time.</p>
-<h3 id="system-architecture-overview">1.2 System Architecture
-Overview</h3>
+<h3 id="project-objective-and-context">1.1 Project Objective and Context</h3>
+<p>The Humanitarian Logistics Analysis System is a comprehensive Java-based application designed to analyze and assess the effectiveness
+of humanitarian relief operations during disaster response scenarios. The system focuses on two primary research problems:</p>
+
+<p><strong>Problem 1 - Relief Item Category Effectiveness Analysis</strong>: This module directly addresses <em>Original Problem 3</em> from the project specification by evaluating which categories of relief items (cash assistance, medical supplies, food aid, shelter provisions, transportation) receive the highest user satisfaction and positive sentiment from affected populations. The analysis aggregates sentiment scores across different relief categories, enabling humanitarian organizations to identify which types of aid are most valued by beneficiaries and which areas require improvement or resource reallocation. Users can visualize satisfaction distributions through interactive bar charts and pie charts, filtering by specific disaster types or viewing aggregate statistics across all disasters.</p>
+
+<p><strong>Problem 2 - Temporal Sentiment Trend Analysis</strong>: This module integrates two complementary temporal perspectives that combine <em>Original Problems 1 and 4</em> from the project specification, providing a unified view of how sentiment evolves throughout disaster response phases:</p>
+
+<ul>
+<li><strong>Category-Specific Temporal Analysis (Original Problem 4)</strong>: Tracks sentiment trends for individual relief categories over time, showing how satisfaction with specific aid types (cash, medical, shelter, food, transportation) changes during different phases of the disaster response. This granular view helps organizations understand which relief categories improve or decline in effectiveness as the response progresses, enabling targeted interventions for underperforming aid types.</li>
+
+<li><strong>Overall Sentiment Timeline (Original Problem 1)</strong>: Analyzes aggregate sentiment trends across all relief categories, providing a comprehensive view of how public perception of the entire humanitarian response evolves from immediate aftermath through ongoing recovery phases. This holistic perspective identifies critical periods when intervention strategies may need adjustment and reveals overall patterns in community satisfaction with relief efforts.</li>
+</ul>
+
+<p>By organizing temporal analyses into a single unified module with two complementary tabs, the application enables users to seamlessly compare category-specific trends against overall sentiment patterns, facilitating comprehensive insights into disaster response effectiveness and resource allocation optimization.</p>
+<h3 id="system-architecture-overview">1.2 System Architecture Overview</h3>
 <p>The application is structured using a professional seven-package
 architecture that cleanly separates concerns and enables modularity,
 testability, and extensibility:</p>
@@ -714,17 +710,9 @@ organized into specialized panels (AdvancedAnalysisPanel, CommentManagementPanel
 The UI automatically updates when underlying data changes through the
 Observer pattern.</p>
 <p><strong>Data Collection Layer</strong> (Crawler Package): Provides pluggable data sources through the Strategy pattern. Implements two main crawlers: YouTubeCrawler (fetches YouTube watch pages using Java HttpClient, parses HTML with regex patterns to extract video metadata and comments) and MockDataCrawler (generates sample posts without requiring internet access). The Registry pattern enables dynamic crawler registration and runtime discovery. Note: YouTubeAPIHelper class exists for potential YouTube Data API v3 integration but is not currently used by the active crawlers.</p>
-<p><strong>Sentiment Analysis Layer</strong> (Sentiment Package): Offers
-multiple sentiment analysis strategies ranging from simple keyword-based
-approaches to advanced machine learning models. Users can select the
-appropriate analyzer based on accuracy and performance requirements.</p>
-<p><strong>Data Preprocessing Layer</strong> (Preprocessor Package):
-Handles text normalization and relief item category classification
-through pattern matching and semantic analysis.</p>
-<p><strong>Analysis Layer</strong> (Analysis Package): Implements
-specialized analysis modules for Problem 1 (SatisfactionAnalysisModule)
-and Problem 2 (TimeSeriesSentimentModule), demonstrating the Strategy
-pattern for pluggable analysis engines.</p>
+<p><strong>Sentiment Analysis Layer</strong> (Sentiment Package): Provides sentiment analysis through multiple implementations with a fallback strategy. PythonSentimentAnalyzer uses the Python backend with xlm-roberta model for multilingual sentiment analysis (called via Python API on port 5001). EnhancedSentimentAnalyzer provides bilingual keyword-based analysis with support for both English and Vietnamese sentiment keywords, serving as fallback when Python API is unavailable. Users interact with sentiment analysis through a single "Analyze All Posts with Python API" button in the Analysis tab that processes all posts using the Python backend.</p>
+<p><strong>Data Preprocessing Layer</strong> (Preprocessor Package): Implements text normalization through the TextPreprocessor interface. The preprocessing pipeline handles URL removal, HTML entity decoding, whitespace normalization, and tokenization to prepare text for sentiment analysis and category-based filtering.</p>
+<p><strong>Analysis Layer</strong> (Analysis Package): Implements specialized analysis engines through the Strategy pattern. SatisfactionAnalysisModule analyzes Problem 1 by calculating sentiment statistics and satisfaction scores per relief category, determining category effectiveness and generating resource allocation recommendations. TimeSeriesSentimentModule implements Problem 2 temporal analysis by grouping sentiments into 6-hour time buckets and tracking how sentiment evolves over time for each relief category, computing trend directions and sector effectiveness ratings.</p>
 <p><strong>Data Persistence Layer</strong> (Database Package): Manages
 SQLite database operations with proper abstraction to support potential
 migration to other database systems without affecting application
@@ -2549,17 +2537,6 @@ classDiagram
     class BasicTextPreprocessor {
         +BasicTextPreprocessor()
         +String preprocess(String text)
-        +List~String~ tokenize(String text)
-        -String removeStopwords(String text)
-        -String normalize(String text)
-    }
-
-    class ReliefItemClassifier {
-        -Map~String, String~ categoryKeywords
-        +ReliefItemClassifier()
-        +String classifyCategory(String text)
-        +List~String~ extractKeywords(String text)
-        -double calculateSimilarity(String text, String category)
     }
 
     TextPreprocessor &lt;|.. BasicTextPreprocessor
@@ -2584,11 +2561,6 @@ pipeline</li>
 <p>The tokenization functionality breaks text into individual words or
 phrases, enabling more granular analysis capabilities for downstream
 processors.</p>
-<p><strong>Relief Item Classification</strong>: The ReliefItemClassifier
-class goes beyond simple text preprocessing to implement semantic
-classification of text into relief categories. This classifier maintains
-a comprehensive mapping of keywords and phrases to relief item
-categories, including:</p>
 <ul>
 <li><strong>CASH</strong>: Keywords like “money”, “cash”, “financial
 aid”, “monetary assistance”</li>
