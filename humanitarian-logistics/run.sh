@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 # Run Humanitarian Logistics Application
 # Integrated Python API + Java App - All-in-one startup
 
