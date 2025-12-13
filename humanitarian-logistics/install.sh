@@ -170,7 +170,9 @@ fi
 # ============================================================================
 print_section "Installing Python Dependencies"
 
-PYTHON_REQS="src/main/python/requirements.txt"
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON_REQS="$SCRIPT_DIR/src/main/python/requirements.txt"
 
 if [ -f "$PYTHON_REQS" ]; then
     echo "Found Python requirements file..."
@@ -186,7 +188,9 @@ fi
 # ============================================================================
 print_section "Downloading ML Models"
 
-PYTHON_API_SCRIPT="src/main/python/sentiment_api.py"
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON_API_SCRIPT="$SCRIPT_DIR/src/main/python/sentiment_api.py"
 
 if [ -f "$PYTHON_API_SCRIPT" ]; then
     print_info "Starting Python API to download and cache ML models..."
@@ -238,12 +242,16 @@ fi
 # ============================================================================
 print_section "Building Application"
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 echo "Running Maven build (this may take a few minutes)..."
+cd "$SCRIPT_DIR"
 mvn clean compile package -DskipTests -q
 
 if [ $? -eq 0 ]; then
     print_success "Application built successfully"
-    JAR_FILE=$(find target -name "*.jar" -type f | head -1)
+    JAR_FILE=$(find "$SCRIPT_DIR/target" -name "*.jar" -type f | head -1)
     if [ -n "$JAR_FILE" ]; then
         JAR_SIZE=$(du -h "$JAR_FILE" | cut -f1)
         print_success "JAR file created: $JAR_FILE ($JAR_SIZE)"
@@ -258,12 +266,15 @@ fi
 # ============================================================================
 print_section "Initializing Databases"
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Create data directory if it doesn't exist
-mkdir -p data
+mkdir -p "$SCRIPT_DIR/data"
 
 # Create empty database files for first-time use
-touch data/humanitarian_logistics_user.db
-touch data/humanitarian_logistics_curated.db
+touch "$SCRIPT_DIR/data/humanitarian_logistics_user.db"
+touch "$SCRIPT_DIR/data/humanitarian_logistics_curated.db"
 
 print_success "Database files created"
 print_success "  • data/humanitarian_logistics_user.db (for user data)"
@@ -283,7 +294,7 @@ echo -e "${GREEN}✓ Databases initialized${NC}"
 echo ""
 echo "Next time, you can run the app directly with:"
 echo ""
-echo "  bash run.sh"
+echo "  cd humanitarian-logistics && bash run.sh"
 echo ""
 echo "═══════════════════════════════════════════════════════════════════════════"
 echo ""
@@ -291,5 +302,5 @@ echo ""
 echo ""
 echo "Installation complete! You can now start the app with:"
 echo ""
-echo "  bash run.sh"
+echo "  cd humanitarian-logistics && bash run.sh"
 echo ""
