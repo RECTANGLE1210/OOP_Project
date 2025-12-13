@@ -4245,3 +4245,9 @@ Nam mô Đức Bổn sư Thích ca Mâu Ni ...' | Result: FOOD (1.0000)
 [2025-12-13 22:39:37] 🏷️  CATEGORY CLASSIFICATION | Text: 'bùa lợi mà nó hại chứ không lợi💀...' | Result: FOOD (0.1667)
 [2025-12-13 22:39:37] 🏷️  CATEGORY CLASSIFICATION | Text: 'Cái gì mà ba vì sông đà sơn ca bằng lăng😂...' | Result: FOOD (0.3333)
 [2025-12-13 22:39:37] 📊 SENTIMENT ANALYSIS | Text: 'Bão Bua Loi sức tàn phá khủng khiếp #thoisu #tintuc #tinnong24h #24h #news...' | Result: NEGATIVE (confidence: 0.6749, raw: 1 STAR)
+
+================================================================================
+Sentiment Analysis API Started: 2025-12-13 22:42:19
+================================================================================
+
+[2025-12-13 22:42:20] ✓ Sentiment analysis model loaded: nlptown/bert-base-multilingual-uncased-sentiment (3-class: Negative/Neutral/Positive, Vietnamese Support)
