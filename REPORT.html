@@ -1269,16 +1269,8 @@ perceived by affected populations. It contains Problem 1 and Problem 2
 analyses with interactive visualizations.</p>
 <h4 id="problem-1-relief-category-effectiveness">4.6.1 Problem 1: Relief
 Category Effectiveness</h4>
-<p><strong>Problem 1</strong> answers: <em>Which relief item categories
-receive the highest satisfaction?</em></p>
-<p><strong>Before Analysis:</strong></p>
-<figure>
-<img src="resource/EmptyAnalysisTab.png" style="width:85.0%"
-alt="Empty Analysis Tab" />
-<figcaption aria-hidden="true">Empty Analysis Tab</figcaption>
-</figure>
-<p>Before performing analysis, the tab displays an empty state with
-controls ready for analysis.</p>
+<p><strong>Problem 1</strong> answers: <em>Which relief item categories receive the highest satisfaction?</em></p>
+<p><strong>Detailed Context:</strong> This module directly addresses <em>Original Problem 3</em> from the project specification by evaluating which categories of relief items (cash assistance, medical supplies, food aid, shelter provisions, transportation) receive the highest user satisfaction and positive sentiment from affected populations. The analysis aggregates sentiment scores across different relief categories, enabling humanitarian organizations to identify which types of aid are most valued by beneficiaries and which areas require improvement or resource reallocation. Users can visualize satisfaction distributions through interactive bar charts and pie charts, filtering by specific disaster types or viewing aggregate statistics across all disasters.</p>
 <p><strong>Step 1: Run Analysis</strong></p>
 <p>Click the <strong>“Analyze All with Python API”</strong> button to: -
 Send all posts and comments to the Python ML backend - Assign sentiment
@@ -1315,12 +1307,15 @@ Means</strong>: - Large POSITIVE segment → Most affected people
 satisfied with relief - Large NEGATIVE segment → Significant
 dissatisfaction exists - Large NEUTRAL segment → Many informational
 posts without emotional tone</p>
-<p><strong>Use This To</strong>: Determine if relief operations are
-generally well-received or problematic</p>
+<p><strong>Use This To</strong>: Determine overall effectiveness of relief operations and identify priority areas for improvement or reallocation</p>
 <h4 id="problem-2-temporal-sentiment-analysis">4.6.2 Problem 2: Temporal
 Sentiment Analysis</h4>
-<p><strong>Problem 2</strong> answers: <em>How does sentiment toward
-relief efforts change over time?</em></p>
+<p><strong>Problem 2 - Temporal Sentiment Trend Analysis</strong> integrates two complementary temporal perspectives that combine <em>Original Problems 1 and 4</em> from the project specification, providing a unified view of how sentiment evolves throughout disaster response phases:</p>
+<ul>
+<li><strong>Category-Specific Temporal Analysis (Original Problem 4)</strong>: Tracks sentiment trends for individual relief categories over time, showing how satisfaction with specific aid types (cash, medical, shelter, food, transportation) changes during different phases of the disaster response. This granular view helps organizations understand which relief categories improve or decline in effectiveness as the response progresses, enabling targeted interventions for underperforming aid types.</li>
+<li><strong>Overall Sentiment Timeline (Original Problem 1)</strong>: Analyzes aggregate sentiment trends across all relief categories, providing a comprehensive view of how public perception of the entire humanitarian response evolves from immediate aftermath through ongoing recovery phases. This holistic perspective identifies critical periods when intervention strategies may need adjustment and reveals overall patterns in community satisfaction with relief efforts.</li>
+</ul>
+<p><strong>Problem 2</strong> answers: <em>How does sentiment toward relief efforts change over time?</em></p>
 <p>This tab provides three different perspectives on how sentiment
 evolves during the disaster response.</p>
 <p><strong>Three Analysis Options:</strong></p>
