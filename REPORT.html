@@ -3900,6 +3900,236 @@ try {
 
 <p><strong>DataPersistenceManager (Facade Pattern)</strong>: Single interface hiding JDBC complexity, enabling technology migration without breaking client code. Current SQLite implementation sufficient for 100s-1000s of posts. For scaling to 100,000+ posts, replace with PostgreSQL without touching application logic - demonstrating real Facade pattern benefit.</p>
 
+<p><strong>Database Schema Overview</strong>: The application maintains 4 primary tables in SQLite database supporting full post-comment hierarchy with disaster metadata:</p>
+
+<table>
+<thead>
+<tr>
+<th><strong>Table Name</strong></th>
+<th><strong>Primary Purpose</strong></th>
+<th><strong>Key Columns</strong></th>
+<th><strong>Relationships</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>posts</strong></td>
+<td>Store YouTube posts and user-added posts</td>
+<td>postId (PK), videoId, title, content, author, createdAt, disasterId (FK)</td>
+<td>Foreign key to disasters(disasterId), One-to-many with comments</td>
+</tr>
+<tr>
+<td><strong>comments</strong></td>
+<td>Store comment thread data for each post</td>
+<td>commentId (PK), postId (FK), author, text, likes, timestamp, parentCommentId (FK)</td>
+<td>Foreign key to posts(postId), Self-referential for nested replies</td>
+</tr>
+<tr>
+<td><strong>disaster_types</strong></td>
+<td>Store custom disaster categories</td>
+<td>disasterId (PK), type [EARTHQUAKE/FLOOD/CYCLONE], description, region</td>
+<td>One-to-many with posts(disasterId)</td>
+</tr>
+<tr>
+<td><strong>relief_items</strong></td>
+<td>Store relief categories extracted from posts</td>
+<td>itemId (PK), postId (FK), category [CASH/MEDICAL/SHELTER/FOOD], keywords, confidence</td>
+<td>Foreign key to posts(postId), Indexed for fast category lookups</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Schema Design Principles</strong>:</p>
+<ul>
+<li><strong>Normalization</strong>: Third Normal Form (3NF) prevents data duplication. disaster_types stored once and referenced via foreign key from 100s of posts, not repeated in each post row.</li>
+<li><strong>Referential Integrity</strong>: Foreign key constraints (disasterId in posts → disasterId in disaster_types) prevent orphaned records. Deleting disaster type automatically cascades or prevents deletion if posts reference it.</li>
+<li><strong>Indexing Strategy</strong>: Composite indexes on (postId, commentId) for fast comment retrieval (avoiding full table scans). Index on disasterId for filtering posts by disaster type. Index on createdAt for chronological queries (temporal sentiment tracking, Problem 2).</li>
+<li><strong>Hierarchical Comments</strong>: parentCommentId column enables nested reply structure. NULL parentCommentId = top-level comment; non-NULL = reply to specific comment. Enables recursive traversal of comment threads.</li>
+<li><strong>Audit Trail</strong>: createdAt and updatedAt timestamps on all tables enable temporal analysis. Track when posts were added, when sentiment analysis occurred, data freshness.</li>
+</ul>
+
+<p><strong>SQL Schema Initialization</strong>: DatabaseManager.initializeDatabase() creates tables on first run:</p>
+
+<pre><code class="language-sql">-- Posts table: YouTube videos + user additions
+CREATE TABLE IF NOT EXISTS posts (
+    postId INTEGER PRIMARY KEY AUTOINCREMENT,
+    videoId TEXT UNIQUE,
+    title TEXT NOT NULL,
+    content TEXT,
+    author TEXT,
+    likes INTEGER DEFAULT 0,
+    views INTEGER DEFAULT 0,
+    disasterId INTEGER NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (disasterId) REFERENCES disaster_types(disasterId)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- Comments table: Threaded comment structure
+CREATE TABLE IF NOT EXISTS comments (
+    commentId INTEGER PRIMARY KEY AUTOINCREMENT,
+    postId INTEGER NOT NULL,
+    author TEXT NOT NULL,
+    text TEXT NOT NULL,
+    likes INTEGER DEFAULT 0,
+    timestamp DATETIME,
+    parentCommentId INTEGER,  -- NULL for top-level, else refers to other comments
+    FOREIGN KEY (postId) REFERENCES posts(postId)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (parentCommentId) REFERENCES comments(commentId)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- Disaster types: Custom classification
+CREATE TABLE IF NOT EXISTS disaster_types (
+    disasterId INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL UNIQUE,  -- EARTHQUAKE, FLOOD, CYCLONE, etc.
+    description TEXT,
+    region TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Relief items: Categories extracted via ML
+CREATE TABLE IF NOT EXISTS relief_items (
+    itemId INTEGER PRIMARY KEY AUTOINCREMENT,
+    postId INTEGER NOT NULL,
+    category TEXT NOT NULL,  -- CASH, MEDICAL, SHELTER, FOOD, TRANSPORTATION
+    keywords TEXT,
+    confidence REAL,  -- 0.0-1.0 from BART model
+    extractedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (postId) REFERENCES posts(postId)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- Indexes for query performance
+CREATE INDEX IF NOT EXISTS idx_posts_disasterId ON posts(disasterId);
+CREATE INDEX IF NOT EXISTS idx_posts_createdAt ON posts(createdAt);
+CREATE INDEX IF NOT EXISTS idx_comments_postId ON comments(postId);
+CREATE INDEX IF NOT EXISTS idx_comments_parentId ON comments(parentCommentId);
+CREATE INDEX IF NOT EXISTS idx_relief_postId ON relief_items(postId);
+CREATE INDEX IF NOT EXISTS idx_relief_category ON relief_items(category);
+</code></pre>
+
+<p><strong>Data Flow Example</strong>: User crawls YouTube video → YouTubeCrawler extracts posts/comments → DatabaseManager.savePost() executes prepared statement INSERT → SQLite enforces foreign key constraint (disasterId must exist in disaster_types table) → Comment hierarchy stored with parentCommentId linking replies to parents → Upon "Analyze All Posts" click, BatchAnalysisModule reads posts via SELECT * FROM posts WHERE disasterId = ? (uses index), sends text to Python API for sentiment, stores results back to sentiment column via UPDATE statement.</p>
+
+<p><strong>Migration Path to PostgreSQL</strong>: Schema SQL is vendor-neutral. To migrate: (1) Install PostgreSQL, (2) Run same DDL statements (AUTOINCREMENT → SERIAL, DATETIME → TIMESTAMP), (3) Update JDBC URL in DataPersistenceManager from "jdbc:sqlite:data/humanitarian_logistics_user.db" to "jdbc:postgresql://localhost:5432/humanitarian_db", (4) Add PostgreSQL driver to pom.xml, (5) Zero code changes in Model/Analysis/UI layer thanks to Facade pattern abstraction.</p>
+
+<p><strong>Disaster Types Supported</strong>: The application initializes with 5 primary disaster types stored in DisasterManager (Singleton pattern). Each type has configurable aliases for flexible keyword matching:</p>
+
+<table>
+<thead>
+<tr>
+<th><strong>Disaster Type</strong></th>
+<th><strong>Aliases</strong></th>
+<th><strong>Region/Context</strong></th>
+<th><strong>Typical Posts Focus</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>yagi</strong></td>
+<td>台風 (typhoon), Yagi, tropical cyclone</td>
+<td>Southeast Asia, Philippines, Vietnam</td>
+<td>Wind damage, flooding from storm surge, evacuation coordination, rescue operations</td>
+</tr>
+<tr>
+<td><strong>koto</strong></td>
+<td>台風, Koto, typhoon storm</td>
+<td>Asia-Pacific region</td>
+<td>Typhoon preparedness, post-storm recovery, agricultural impact, shelter needs</td>
+</tr>
+<tr>
+<td><strong>bualo</strong></td>
+<td>Bualoi, tropical storm</td>
+<td>Coastal Southeast Asia</td>
+<td>Flood response, water access issues, medical supply distribution</td>
+</tr>
+<tr>
+<td><strong>matmo</strong></td>
+<td>Matmo, typhoon, extreme weather</td>
+<td>Taiwan, Japan region</td>
+<td>Infrastructure damage, power restoration, food/water distribution</td>
+</tr>
+<tr>
+<td><strong>fung-wong</strong></td>
+<td>FUNG-WONG, Noru, typhoon</td>
+<td>East Asia</td>
+<td>Multi-country impact, cross-border aid coordination, longterm recovery</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Relief Categories Supported</strong>: The application tracks 5 relief item categories extracted via BART-Large-MNLI ML model or keyword-based classification. Each category represents a distinct humanitarian assistance type:</p>
+
+<table>
+<thead>
+<tr>
+<th><strong>Category</strong></th>
+<th><strong>Examples</strong></th>
+<th><strong>Typical Beneficiary Feedback</strong></th>
+<th><strong>Analysis Focus (Problem 1)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CASH</strong></td>
+<td>Cash assistance, conditional cash transfers, cash-for-work programs</td>
+<td>Direct aid effectiveness, purchasing power in local markets, dignity/autonomy</td>
+<td>Satisfaction trends: "Cash helped us buy food locally" vs complaint "Money arrives too late"</td>
+</tr>
+<tr>
+<td><strong>MEDICAL</strong></td>
+<td>Medical supplies, vaccines, antibiotics, first aid, trauma care, mental health support</td>
+<td>Healthcare access, medication quality, treatment outcomes, preventive care satisfaction</td>
+<td>Sentiment analysis: Medical supply effectiveness, healthcare worker availability, patient outcomes</td>
+</tr>
+<tr>
+<td><strong>SHELTER</strong></td>
+<td>Tents, temporary housing, plastic sheeting, building materials, housing repairs</td>
+<td>Living conditions, safety, privacy, permanence of solution, weatherproofing effectiveness</td>
+<td>Satisfaction metrics: Shelter quality vs speed of deployment, temporary vs permanent solutions</td>
+</tr>
+<tr>
+<td><strong>FOOD</strong></td>
+<td>Food packages, rice, cooking supplies, water, nutritional assistance, school meals</td>
+<td>Food security, cultural appropriateness, food quality, dietary diversity, sufficient portions</td>
+<td>Sentiment tracking: Food sufficiency, taste/cultural fit, distribution fairness across groups</td>
+</tr>
+<tr>
+<td><strong>TRANSPORTATION</strong></td>
+<td>Ambulances, evacuation vehicles, fuel for transport, logistics coordination</td>
+<td>Evacuation speed, medical transport effectiveness, supply distribution reach, accessibility</td>
+<td>Temporal analysis: Transportation availability during acute phase vs recovery phase</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Customization Capability - Adding New Disaster Types</strong>: The application architecture supports dynamic disaster type expansion without code modification. In DisasterManager (lines 1-50 of model/DisasterManager.java), the constructor initializes disasters:
+
+<pre><code class="language-java">public DisasterManager() {
+    // Initialize default disasters with aliases
+    addDisaster(new DisasterType("yagi", "台風,Yagi,tropical cyclone"));
+    addDisaster(new DisasterType("koto", "台風,Koto,typhoon storm"));
+    addDisaster(new DisasterType("bualo", "Bualoi,tropical storm"));
+    addDisaster(new DisasterType("matmo", "Matmo,typhoon,extreme weather"));
+    addDisaster(new DisasterType("fung-wong", "FUNG-WONG,Noru,typhoon"));
+    
+    // Future expansion: Simply add more disasters here, OR
+    // Load from external source: loadDisastersFromFile("disasters.dat");
+}
+</code></pre>
+
+To add new disaster types (e.g., earthquakes, floods): Add new lines in constructor OR modify disasters.dat file (Java serialized object containing DisasterType list). Data Persistence Manager loads disasters.dat on startup - changes take effect immediately without code recompilation.</p>
+
+<p><strong>Customization Capability - Adding New Relief Categories</strong>: Relief categories are stored in relief_items table with (postId, category, keywords, confidence). To add new categories (e.g., EDUCATION, LIVELIHOOD):
+
+<ul>
+<li><strong>Database approach</strong>: Insert new rows into relief_items table with category='EDUCATION' and keywords='school,education,training,scholarship'. Queries SELECT DISTINCT category FROM relief_items automatically discover new categories.</li>
+<li><strong>Code approach</strong>: Add new enum value to ReliefItem.Category enum (EDUCATION, LIVELIHOOD) and extend BART model keyword patterns in PythonCategoryClassifier. No breaking changes - existing categories still work.</li>
+<li><strong>Abstraction benefit</strong>: AnalysisModule and UI (Analysis tab) read categories dynamically from database or Model state - hardcoded category lists avoided through abstraction.</li>
+</ul>
+</p>
+
 <h3 id="data-collection">8.4 Data Collection and HTTP</h3>
 
 <p><strong>Java HttpClient (java.net.http, built-in since Java 11)</strong>: Modern HTTP protocol handler with connection pooling, automatic timeout management (default 30 seconds), follows HTTP redirects (301, 302), handles chunked transfer encoding, and supports HTTP/1.1 and HTTP/2.</p>
@@ -4379,6 +4609,83 @@ registry.registerCrawler(new RedditCrawler());         // New
 <li>Max retries: 5 (total wait: 1+4+16+64+256 = 341 seconds = 5.6 minutes)</li>
 </ul>
 Allows system to gracefully handle rate limits without crashing.</p>
+
+<p><strong>Disaster Types and Relief Categories - Customization and Expansion</strong>:</p>
+
+<p><strong>Current Configuration</strong>: The application launches with 5 hardcoded disaster types (yagi, koto, bualo, matmo, fung-wong) and 5 relief categories (CASH, MEDICAL, SHELTER, FOOD, TRANSPORTATION). These are initialized via DisasterManager (Singleton) and relief_items table schema. However, the architecture enables easy customization without code recompilation.</p>
+
+<p><strong>How to Add New Disaster Types</strong>: Users can expand disaster coverage by modifying the disasters.dat serialized file (located in data/ directory after first run):</p>
+
+<pre><code class="language-java">// Approach 1: Modify disasters.dat programmatically
+DisasterManager manager = DisasterManager.getInstance();
+manager.addDisaster(new DisasterType("earthquake", "Earthquake,EQ,seismic,tremor"));
+manager.addDisaster(new DisasterType("flood", "Flood,flooding,water,inundation"));
+manager.addDisaster(new DisasterType("cyclone", "Cyclone,hurricane,tropical storm,typhoon"));
+
+// Serialize updated disasters back to file:
+DataPersistenceManager persistence = new DataPersistenceManager();
+persistence.saveDisasters(manager);  // Writes to data/disasters.dat
+
+// Next application launch will load these new disaster types automatically ✓
+// No code changes needed - abstraction at work
+</code></pre>
+
+<p><strong>Database-Driven Approach</strong>: For production deployment with multi-user access via PostgreSQL migration:
+
+<ul>
+<li><strong>Step 1</strong>: Add new disaster records to disaster_types table:
+<pre><code class="language-sql">INSERT INTO disaster_types (type, description, region) VALUES 
+('earthquake', 'Seismic disaster', 'Global'),
+('flood', 'Water-related disaster', 'Global'),
+('cyclone', 'Severe tropical storms', 'Asia-Pacific');
+</code></pre>
+</li>
+<li><strong>Step 2</strong>: Update DisasterManager.addDisaster() calls in application startup (no database query needed - disasters loaded once on startup)</li>
+<li><strong>Step 3</strong>: UI automatically discovers new disasters via Model instance (Observer pattern) - no UI recompilation</li>
+</ul>
+</p>
+
+<p><strong>How to Add New Relief Categories</strong>: Relief categories are more flexible - they can be added purely through data without touching code:</p>
+
+<pre><code class="language-sql">-- Add new relief categories to database (zero code changes)
+INSERT INTO relief_items (postId, category, keywords, confidence) VALUES 
+(1, 'EDUCATION', 'school,training,education,scholarship', 0.92),
+(2, 'LIVELIHOOD', 'job,employment,income,business', 0.85),
+(3, 'WASH', 'water,sanitation,hygiene,toilet', 0.88);
+
+-- Queries and UI automatically handle new categories:
+-- SELECT DISTINCT category FROM relief_items;  -- Returns: CASH, MEDICAL, SHELTER, FOOD, TRANSPORTATION, EDUCATION, LIVELIHOOD, WASH
+
+-- AnalysisModule iterates over categories dynamically:
+-- Analysis tab shows all discovered categories automatically ✓
+</code></pre>
+
+<p><strong>Integration with Temporal Analysis (Problem 2)</strong>: When new disaster types or relief categories are added:
+
+<ul>
+<li><strong>TimeSeriesSentimentModule</strong> automatically includes new categories in temporal tracking</li>
+<li>Example: Add "EDUCATION" category → Temporal chart automatically shows EDUCATION sentiment trends over time</li>
+<li>No code modification required - Module reads from database schema dynamically</li>
+<li>Benefits: Humanitarian organizations can track emerging aid priorities in real-time (e.g., post-disaster education needs emerging 2 weeks after event)</li>
+</ul>
+</p>
+
+<p><strong>Scalability Implications</strong>:
+<ul>
+<li><strong>Current (5 disaster types, 5 relief categories)</strong>: UI dropdowns load instantly, analysis completes in seconds</li>
+<li><strong>Scaled (50+ disaster types, 20+ relief categories)</strong>: Still performant - database indexes on category column + Model caching prevents performance degradation</li>
+<li><strong>Multi-tenant future</strong>: Each organization could have custom disaster types/categories in separate database schema - PostgreSQL row-level security enforces isolation</li>
+</ul>
+</p>
+
+<p><strong>Migration Automation</strong>: If you clone disasters.dat from one machine to another, or restore from backup:
+<ul>
+<li>DataPersistenceManager.loadDisasters() automatically deserializes disasters.dat</li>
+<li>DisasterManager singleton updates in-memory disaster list</li>
+<li>All UI components receive update notification via Model listener pattern</li>
+<li>Zero application restart required - hot reloading enabled by Singleton + Observer patterns</li>
+</ul>
+</p>
 
 <h3 id="technology-stack">8.10 Technology Stack Summary</h3>
 
