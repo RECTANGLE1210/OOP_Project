@@ -1291,18 +1291,16 @@ Chart</strong>: Shows exact counts of sentiment or categories -
 charts with your selections.</p>
 <figure>
 <img src="resource/Problem1ByCategory.png" style="width:85.0%"
-alt="Problem 1 Diagram" />
-<figcaption aria-hidden="true">Problem 1 Diagram</figcaption>
+alt="Problem 1 Relief Category Distribution" />
+<figcaption aria-hidden="true">Problem 1 Relief Category Distribution</figcaption>
 </figure>
-<p><strong>Sentiment Tab - Overall Distribution:</strong></p>
+<p><strong>Category Distribution Chart</strong>: This bar chart displays the count of posts/comments mentioning each relief category (CASH, MEDICAL, SHELTER, FOOD, TRANSPORTATION). <strong>What it means</strong>: Taller bars indicate which relief categories receive more discussion and attention from affected populations. <strong>How to interpret</strong>: Compare bar heights to identify which aid types are most talked about – high volume may indicate either strong appreciation (many positive mentions) or criticism (many negative mentions). Cross-reference with sentiment data to understand whether the discussion is positive or negative.</p>
 <figure>
 <img src="resource/Problem1Sentiment.png" style="width:85.0%"
-alt="Problem 1 Sentiment" />
-<figcaption aria-hidden="true">Problem 1 Sentiment</figcaption>
+alt="Problem 1 Sentiment Distribution Pie Chart" />
+<figcaption aria-hidden="true">Problem 1 Sentiment Distribution Pie Chart</figcaption>
 </figure>
-<p>This tab shows the overall sentiment distribution across all analyzed
-posts: - <strong>Pie Chart Display</strong>: Segments represent
-POSITIVE, NEGATIVE, and NEUTRAL sentiments - <strong>What it
+<p><strong>Overall Sentiment Distribution</strong>: This pie chart shows the overall sentiment distribution across all analyzed posts: - <strong>Pie Chart Display</strong>: Segments represent POSITIVE, NEGATIVE, and NEUTRAL sentiments with percentage values - <strong>What it
 Means</strong>: - Large POSITIVE segment → Most affected people
 satisfied with relief - Large NEGATIVE segment → Significant
 dissatisfaction exists - Large NEUTRAL segment → Many informational
@@ -1329,49 +1327,68 @@ combined over the disaster response period - Identify critical periods
 when satisfaction peaked or dropped - Understand if relief efforts
 improved public perception over time</p>
 <p><strong>3. View Statistics Report</strong> - Detailed table with
-numerical breakdown by time period - Columns show: time period, POSITIVE
-count, NEGATIVE count, NEUTRAL count, percentages - Export or review
-exact numbers for presentations</p>
-<p><strong>Visualization 1: Overall Sentiment Timeline</strong></p>
+numerical breakdown by time period</p>
+<p><strong>Visualization 1: Overall Sentiment Timeline (Time-Series Bar Chart)</strong></p>
 <figure>
 <img src="resource/Problem2Overtime.png" style="width:85.0%"
-alt="Problem 2 Overall Timeline" />
-<figcaption aria-hidden="true">Problem 2 Overall Timeline</figcaption>
+alt="Problem 2 Overall Sentiment Timeline" />
+<figcaption aria-hidden="true">Problem 2 Overall Sentiment Timeline - Aggregated Sentiment Evolution</figcaption>
 </figure>
 <ul>
-<li><strong>X-axis</strong>: Timeline of disaster response
-(days/weeks)</li>
-<li><strong>Y-axis</strong>: Number of posts with each sentiment</li>
-<li><strong>Lines</strong>: Separate trends for POSITIVE, NEGATIVE,
-NEUTRAL</li>
-<li><strong>Interpretation</strong>: Upward POSITIVE line means growing
-satisfaction; downward means declining</li>
+<li><strong>Chart Type</strong>: Time-series bar chart showing aggregated sentiment across all relief categories</li>
+<li><strong>X-axis</strong>: Timeline of disaster response (6-hour time buckets)</li>
+<li><strong>Y-axis</strong>: Count of posts with each sentiment type</li>
+<li><strong>Bars</strong>: Separate bar groups for POSITIVE, NEGATIVE, NEUTRAL at each time period</li>
+<li><strong>Interpretation</strong>: 
+  <ul>
+  <li>Rising POSITIVE bars → Growing satisfaction with overall relief efforts over time</li>
+  <li>Rising NEGATIVE bars → Increasing criticism and dissatisfaction during that period</li>
+  <li>Shifts in pattern → Critical turning points when public perception changed</li>
+  <li>Peak periods → Identify which phases of disaster response generated most discussion</li>
+  </ul>
+</li>
+<li><strong>Use This To</strong>: Understand overall public perception trajectory and identify periods when relief operations were most/least well-received</li>
 </ul>
-<p><strong>Visualization 2: Sentiment by Category Over Time</strong></p>
+<p><strong>Visualization 2: Sentiment by Category Over Time (Multi-Series Time-Series Chart)</strong></p>
 <figure>
 <img src="resource/Problem2ByCategory.png" style="width:85.0%"
-alt="Problem 2 By Category" />
-<figcaption aria-hidden="true">Problem 2 By Category</figcaption>
+alt="Problem 2 Category-Specific Temporal Analysis" />
+<figcaption aria-hidden="true">Problem 2 Category-Specific Temporal Analysis - How Different Aid Types Evolved</figcaption>
 </figure>
 <ul>
-<li><strong>Multiple Lines</strong>: Each relief category has its own
-trend line</li>
-<li><strong>X-axis</strong>: Timeline of disaster response</li>
-<li><strong>Y-axis</strong>: Sentiment scores</li>
-<li><strong>Interpretation</strong>: Different categories may follow
-different trajectories; some improve while others decline</li>
+<li><strong>Chart Type</strong>: Multi-series time-series visualization tracking individual relief categories</li>
+<li><strong>Lines/Bars</strong>: Each relief category (CASH, MEDICAL, SHELTER, FOOD, TRANSPORTATION) shows its own sentiment trend</li>
+<li><strong>X-axis</strong>: Timeline of disaster response (6-hour time buckets)</li>
+<li><strong>Y-axis</strong>: Sentiment score or count for each category</li>
+<li><strong>Interpretation</strong>:
+  <ul>
+  <li>Diverging trends → Different aid types are perceived differently as response progresses</li>
+  <li>Upward trajectory for a category → That aid type became more valued/appreciated over time</li>
+  <li>Downward trajectory → That aid type lost effectiveness or faced increased criticism</li>
+  <li>Crossing lines → Point where one aid type became more popular than another</li>
+  <li>Persistent differences → Some categories consistently outperform others throughout response</li>
+  </ul>
+</li>
+<li><strong>Use This To</strong>: Identify which relief categories need improvement, when adjustments should be made, and which aid types maintained effectiveness throughout response phases</li>
 </ul>
-<p><strong>Visualization 3: Statistics Report</strong></p>
+<p><strong>Visualization 3: Statistics Report (Detailed Numerical Table)</strong></p>
 <figure>
 <img src="resource/Problem2Sentiment.png" style="width:85.0%"
-alt="Problem 2 Statistics" />
-<figcaption aria-hidden="true">Problem 2 Statistics</figcaption>
+alt="Problem 2 Statistics Report" />
+<figcaption aria-hidden="true">Problem 2 Statistics Report - Precise Numerical Breakdown</figcaption>
 </figure>
 <ul>
-<li><strong>Format</strong>: Detailed breakdown of sentiment data</li>
-<li><strong>Contents</strong>: Time period, POSITIVE count, NEGATIVE
-count, NEUTRAL count, percentages, totals</li>
-<li><strong>Use For</strong>: Exact numbers for reports, detailed
+<li><strong>Format</strong>: Detailed tabular breakdown of sentiment data by time period</li>
+<li><strong>Contents</strong>: Time period, POSITIVE count, NEGATIVE count, NEUTRAL count, percentages, totals</li>
+<li><strong>Interpretation Guide</strong>:
+  <ul>
+  <li>Column comparison → See exact numbers to understand magnitude of sentiment shifts</li>
+  <li>Percentage trends → Track how sentiment distribution changed (e.g., POSITIVE % increased from 30% to 60%)</li>
+  <li>Total counts → Identify periods with more/less social media discussion</li>
+  </ul>
+</li>
+<li><strong>Use For</strong>: Extract precise numbers for presentations, reports, and detailed analysis documentation; share exact metrics with stakeholders</li>
+</ul>
 comparisons between time periods</li>
 </ul>
 <h4 id="combined-report">4.6.3 Combined Report</h4>
