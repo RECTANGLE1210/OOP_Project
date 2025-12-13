@@ -9,16 +9,7 @@ public class DataPersistenceManager {
     private String disastersFile;
     
     private String getDataDir() {
-
-        String currentDir = new File(".").getAbsolutePath();
-        File dataDir;
-        
-        if (currentDir.endsWith("humanitarian-logistics")) {
-            dataDir = new File("data");
-        } else {
-
-            dataDir = new File("humanitarian-logistics/data");
-        }
+        File dataDir = new File("data");
         
         if (!dataDir.exists()) {
             dataDir.mkdirs();
