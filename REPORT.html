@@ -2017,15 +2017,34 @@ classDiagram
         +removeDisasterType(String)
     }
 
-    YouTubePost <|-- Post
-    Comment --* "1" Post
+    %% Inheritance: YouTubePost extends Post
+    YouTubePost --|> Post
+    
+    %% Composition: Post contains multiple Comments
+    Post "1" --* Comment
+    
+    %% Association: Post uses Sentiment
     Post --> Sentiment
+    
+    %% Association: Post uses ReliefItem
     Post --> ReliefItem
+    
+    %% Enum relationship: Sentiment contains SentimentType
     Sentiment --> SentimentType
+    
+    %% Enum relationship: ReliefItem contains Category
     ReliefItem --> Category
+    
+    %% Association: Comment uses Sentiment
     Comment --> Sentiment
+    
+    %% Association: Comment uses ReliefItem
     Comment --> ReliefItem
+    
+    %% Association: YouTubePost uses DisasterType
     YouTubePost --> DisasterType
+    
+    %% Association: DisasterManager uses DisasterType
     DisasterManager --> DisasterType
 
 </div>
@@ -2173,16 +2192,23 @@ classDiagram
         +enableChartInteractivity(ChartPanel)$ void
     }
 
-    View "1" *-- "1" CrawlControlPanel
-    View "1" *-- "1" DataCollectionPanel
-    View "1" *-- "1" CommentManagementPanel
-    View "1" *-- "1" AdvancedAnalysisPanel
+    %% Composition: View contains panel components
+    View "1" *-- CrawlControlPanel
+    View "1" *-- DataCollectionPanel
+    View "1" *-- CommentManagementPanel
+    View "1" *-- AdvancedAnalysisPanel
+    
+    %% Association: Panels use Model
     CrawlControlPanel --> Model
     DataCollectionPanel --> Model
     CommentManagementPanel --> Model
     CommentManagementPanel --> DatabaseManager
     AdvancedAnalysisPanel --> Model
+    
+    %% Observer pattern: Model notifies listeners
     Model "1" --> "*" ModelListener
+    
+    %% Association: Model uses other services
     Model --> SentimentAnalyzer
     Model --> DatabaseManager
     Model --> DataPersistenceManager
@@ -2378,13 +2404,20 @@ classDiagram
         +initializeCrawlers()
     }
 
+    %% Interface implementations
     DataCrawler <|.. YouTubeCrawler
     DataCrawler <|.. MockDataCrawler
+    
+    %% Associations: Crawlers use other components
     YouTubeCrawler --> SentimentAnalyzer
     MockDataCrawler --> SentimentAnalyzer
     MockDataCrawler --> PythonCategoryClassifier
-    CrawlerRegistry --> CrawlerFactory
-    CrawlerRegistry --> CrawlerConfig
+    
+    %% Composition: CrawlerRegistry contains CrawlerFactory and CrawlerConfig
+    CrawlerRegistry "1" *-- CrawlerFactory
+    CrawlerRegistry "1" *-- CrawlerConfig
+    
+    %% Association: CrawlerManager manages CrawlerRegistry
     CrawlerManager --> CrawlerRegistry
 
 </div>
