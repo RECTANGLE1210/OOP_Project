@@ -1,8 +1,22 @@
 package com.humanitarian.logistics.database;
 
-import com.humanitarian.logistics.model.*;
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.humanitarian.logistics.model.DisasterManager;
+import com.humanitarian.logistics.model.DisasterType;
+import com.humanitarian.logistics.model.Post;
 
 public class DataPersistenceManager {
     private String postsFile;

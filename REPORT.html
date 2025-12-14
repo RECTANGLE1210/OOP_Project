@@ -2017,15 +2017,34 @@ classDiagram
         +removeDisasterType(String)
     }
 
-    YouTubePost <|-- Post
-    Comment --* "1" Post
+    %% Inheritance: YouTubePost extends Post
+    YouTubePost --|> Post
+    
+    %% Composition: Post contains multiple Comments
+    Post "1" --* Comment
+    
+    %% Association: Post uses Sentiment
     Post --> Sentiment
+    
+    %% Association: Post uses ReliefItem
     Post --> ReliefItem
+    
+    %% Enum relationship: Sentiment contains SentimentType
     Sentiment --> SentimentType
+    
+    %% Enum relationship: ReliefItem contains Category
     ReliefItem --> Category
+    
+    %% Association: Comment uses Sentiment
     Comment --> Sentiment
+    
+    %% Association: Comment uses ReliefItem
     Comment --> ReliefItem
+    
+    %% Association: YouTubePost uses DisasterType
     YouTubePost --> DisasterType
+    
+    %% Association: DisasterManager uses DisasterType
     DisasterManager --> DisasterType
 
 </div>
@@ -2173,16 +2192,23 @@ classDiagram
         +enableChartInteractivity(ChartPanel)$ void
     }
 
-    View "1" *-- "1" CrawlControlPanel
-    View "1" *-- "1" DataCollectionPanel
-    View "1" *-- "1" CommentManagementPanel
-    View "1" *-- "1" AdvancedAnalysisPanel
+    %% Composition: View contains panel components
+    View "1" *-- CrawlControlPanel
+    View "1" *-- DataCollectionPanel
+    View "1" *-- CommentManagementPanel
+    View "1" *-- AdvancedAnalysisPanel
+    
+    %% Association: Panels use Model
     CrawlControlPanel --> Model
     DataCollectionPanel --> Model
     CommentManagementPanel --> Model
     CommentManagementPanel --> DatabaseManager
     AdvancedAnalysisPanel --> Model
+    
+    %% Observer pattern: Model notifies listeners
     Model "1" --> "*" ModelListener
+    
+    %% Association: Model uses other services
     Model --> SentimentAnalyzer
     Model --> DatabaseManager
     Model --> DataPersistenceManager
@@ -2378,13 +2404,20 @@ classDiagram
         +initializeCrawlers()
     }
 
+    %% Interface implementations
     DataCrawler <|.. YouTubeCrawler
     DataCrawler <|.. MockDataCrawler
+    
+    %% Associations: Crawlers use other components
     YouTubeCrawler --> SentimentAnalyzer
     MockDataCrawler --> SentimentAnalyzer
     MockDataCrawler --> PythonCategoryClassifier
-    CrawlerRegistry --> CrawlerFactory
-    CrawlerRegistry --> CrawlerConfig
+    
+    %% Composition: CrawlerRegistry contains CrawlerFactory and CrawlerConfig
+    CrawlerRegistry "1" *-- CrawlerFactory
+    CrawlerRegistry "1" *-- CrawlerConfig
+    
+    %% Association: CrawlerManager manages CrawlerRegistry
     CrawlerManager --> CrawlerRegistry
 
 </div>
@@ -3900,6 +3933,240 @@ try {
 
 <p><strong>DataPersistenceManager (Facade Pattern)</strong>: Single interface hiding JDBC complexity, enabling technology migration without breaking client code. Current SQLite implementation sufficient for 100s-1000s of posts. For scaling to 100,000+ posts, replace with PostgreSQL without touching application logic - demonstrating real Facade pattern benefit.</p>
 
+<p><strong>Database Schema Overview</strong>: The application maintains 4 primary tables in SQLite database supporting full post-comment hierarchy with disaster metadata:</p>
+
+<table>
+<thead>
+<tr>
+<th><strong>Table Name</strong></th>
+<th><strong>Primary Purpose</strong></th>
+<th><strong>Key Columns</strong></th>
+<th><strong>Relationships</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>posts</strong></td>
+<td>Store YouTube posts and user-added posts</td>
+<td>postId (PK), videoId, title, content, author, createdAt, disasterId (FK)</td>
+<td>Foreign key to disasters(disasterId), One-to-many with comments</td>
+</tr>
+<tr>
+<td><strong>comments</strong></td>
+<td>Store comment thread data for each post</td>
+<td>commentId (PK), postId (FK), author, text, likes, timestamp, parentCommentId (FK)</td>
+<td>Foreign key to posts(postId), Self-referential for nested replies</td>
+</tr>
+<tr>
+<td><strong>disaster_types</strong></td>
+<td>Store custom disaster categories</td>
+<td>disasterId (PK), type [EARTHQUAKE/FLOOD/CYCLONE], description, region</td>
+<td>One-to-many with posts(disasterId)</td>
+</tr>
+<tr>
+<td><strong>relief_items</strong></td>
+<td>Store relief categories extracted from posts</td>
+<td>itemId (PK), postId (FK), category [CASH/MEDICAL/SHELTER/FOOD], keywords, confidence</td>
+<td>Foreign key to posts(postId), Indexed for fast category lookups</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Schema Design Principles</strong>:</p>
+<ul>
+<li><strong>Normalization</strong>: Third Normal Form (3NF) prevents data duplication. disaster_types stored once and referenced via foreign key from 100s of posts, not repeated in each post row.</li>
+<li><strong>Referential Integrity</strong>: Foreign key constraints (disasterId in posts → disasterId in disaster_types) prevent orphaned records. Deleting disaster type automatically cascades or prevents deletion if posts reference it.</li>
+<li><strong>Indexing Strategy</strong>: Composite indexes on (postId, commentId) for fast comment retrieval (avoiding full table scans). Index on disasterId for filtering posts by disaster type. Index on createdAt for chronological queries (temporal sentiment tracking, Problem 2).</li>
+<li><strong>Hierarchical Comments</strong>: parentCommentId column enables nested reply structure. NULL parentCommentId = top-level comment; non-NULL = reply to specific comment. Enables recursive traversal of comment threads.</li>
+<li><strong>Audit Trail</strong>: createdAt and updatedAt timestamps on all tables enable temporal analysis. Track when posts were added, when sentiment analysis occurred, data freshness.</li>
+</ul>
+
+<p><strong>SQL Schema Initialization</strong>: DatabaseManager.initializeDatabase() creates tables on first run:</p>
+
+<pre><code class="language-sql">-- Posts table: YouTube videos + user additions
+CREATE TABLE IF NOT EXISTS posts (
+    postId INTEGER PRIMARY KEY AUTOINCREMENT,
+    videoId TEXT UNIQUE,
+    title TEXT NOT NULL,
+    content TEXT,
+    author TEXT,
+    likes INTEGER DEFAULT 0,
+    views INTEGER DEFAULT 0,
+    disasterId INTEGER NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (disasterId) REFERENCES disaster_types(disasterId)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- Comments table: Threaded comment structure
+CREATE TABLE IF NOT EXISTS comments (
+    commentId INTEGER PRIMARY KEY AUTOINCREMENT,
+    postId INTEGER NOT NULL,
+    author TEXT NOT NULL,
+    text TEXT NOT NULL,
+    likes INTEGER DEFAULT 0,
+    timestamp DATETIME,
+    parentCommentId INTEGER,  -- NULL for top-level, else refers to other comments
+    FOREIGN KEY (postId) REFERENCES posts(postId)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (parentCommentId) REFERENCES comments(commentId)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- Disaster types: Custom classification
+CREATE TABLE IF NOT EXISTS disaster_types (
+    disasterId INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL UNIQUE,  -- EARTHQUAKE, FLOOD, CYCLONE, etc.
+    description TEXT,
+    region TEXT,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Relief items: Categories extracted via ML
+CREATE TABLE IF NOT EXISTS relief_items (
+    itemId INTEGER PRIMARY KEY AUTOINCREMENT,
+    postId INTEGER NOT NULL,
+    category TEXT NOT NULL,  -- CASH, MEDICAL, SHELTER, FOOD, TRANSPORTATION
+    keywords TEXT,
+    confidence REAL,  -- 0.0-1.0 from BART model
+    extractedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (postId) REFERENCES posts(postId)
+        ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- Indexes for query performance
+CREATE INDEX IF NOT EXISTS idx_posts_disasterId ON posts(disasterId);
+CREATE INDEX IF NOT EXISTS idx_posts_createdAt ON posts(createdAt);
+CREATE INDEX IF NOT EXISTS idx_comments_postId ON comments(postId);
+CREATE INDEX IF NOT EXISTS idx_comments_parentId ON comments(parentCommentId);
+CREATE INDEX IF NOT EXISTS idx_relief_postId ON relief_items(postId);
+CREATE INDEX IF NOT EXISTS idx_relief_category ON relief_items(category);
+</code></pre>
+
+<p><strong>Data Flow Example</strong>: User crawls YouTube video → YouTubeCrawler extracts posts/comments → DatabaseManager.savePost() executes prepared statement INSERT → SQLite enforces foreign key constraint (disasterId must exist in disaster_types table) → Comment hierarchy stored with parentCommentId linking replies to parents → Upon "Analyze All Posts" click, BatchAnalysisModule reads posts via SELECT * FROM posts WHERE disasterId = ? (uses index), sends text to Python API for sentiment, stores results back to sentiment column via UPDATE statement.</p>
+
+<p><strong>Migration Path to PostgreSQL</strong>: Schema SQL is vendor-neutral. To migrate: (1) Install PostgreSQL, (2) Run same DDL statements (AUTOINCREMENT → SERIAL, DATETIME → TIMESTAMP), (3) Update JDBC URL in DataPersistenceManager from "jdbc:sqlite:data/humanitarian_logistics_user.db" to "jdbc:postgresql://localhost:5432/humanitarian_db", (4) Add PostgreSQL driver to pom.xml, (5) Zero code changes in Model/Analysis/UI layer thanks to Facade pattern abstraction.</p>
+
+<p><strong>Disaster Types Supported</strong>: The application initializes with 5 primary disaster types stored in DisasterManager (Singleton pattern). Each type has configurable aliases for flexible keyword matching:</p>
+
+<table>
+<thead>
+<tr>
+<th><strong>Disaster Type</strong></th>
+<th><strong>Aliases</strong></th>
+<th><strong>Region/Context</strong></th>
+<th><strong>Typical Posts Focus</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>yagi</strong></td>
+<td>台風 (typhoon), Yagi, tropical cyclone</td>
+<td>Southeast Asia, Philippines, Vietnam</td>
+<td>Wind damage, flooding from storm surge, evacuation coordination, rescue operations</td>
+</tr>
+<tr>
+<td><strong>koto</strong></td>
+<td>台風, Koto, typhoon storm</td>
+<td>Asia-Pacific region</td>
+<td>Typhoon preparedness, post-storm recovery, agricultural impact, shelter needs</td>
+</tr>
+<tr>
+<td><strong>bualo</strong></td>
+<td>Bualoi, tropical storm</td>
+<td>Coastal Southeast Asia</td>
+<td>Flood response, water access issues, medical supply distribution</td>
+</tr>
+<tr>
+<td><strong>matmo</strong></td>
+<td>Matmo, typhoon, extreme weather</td>
+<td>Taiwan, Japan region</td>
+<td>Infrastructure damage, power restoration, food/water distribution</td>
+</tr>
+<tr>
+<td><strong>fung-wong</strong></td>
+<td>FUNG-WONG, Noru, typhoon</td>
+<td>East Asia</td>
+<td>Multi-country impact, cross-border aid coordination, longterm recovery</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Relief Categories Supported</strong>: The application tracks 5 relief item categories extracted via BART-Large-MNLI ML model or keyword-based classification. Each category represents a distinct humanitarian assistance type:</p>
+
+<table>
+<thead>
+<tr>
+<th><strong>Category</strong></th>
+<th><strong>Examples</strong></th>
+<th><strong>Typical Beneficiary Feedback</strong></th>
+<th><strong>Analysis Focus (Problem 1)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CASH</strong></td>
+<td>Cash assistance, conditional cash transfers, cash-for-work programs</td>
+<td>Direct aid effectiveness, purchasing power in local markets, dignity/autonomy</td>
+<td>Satisfaction trends: "Cash helped us buy food locally" vs complaint "Money arrives too late"</td>
+</tr>
+<tr>
+<td><strong>MEDICAL</strong></td>
+<td>Medical supplies, vaccines, antibiotics, first aid, trauma care, mental health support</td>
+<td>Healthcare access, medication quality, treatment outcomes, preventive care satisfaction</td>
+<td>Sentiment analysis: Medical supply effectiveness, healthcare worker availability, patient outcomes</td>
+</tr>
+<tr>
+<td><strong>SHELTER</strong></td>
+<td>Tents, temporary housing, plastic sheeting, building materials, housing repairs</td>
+<td>Living conditions, safety, privacy, permanence of solution, weatherproofing effectiveness</td>
+<td>Satisfaction metrics: Shelter quality vs speed of deployment, temporary vs permanent solutions</td>
+</tr>
+<tr>
+<td><strong>FOOD</strong></td>
+<td>Food packages, rice, cooking supplies, water, nutritional assistance, school meals</td>
+<td>Food security, cultural appropriateness, food quality, dietary diversity, sufficient portions</td>
+<td>Sentiment tracking: Food sufficiency, taste/cultural fit, distribution fairness across groups</td>
+</tr>
+<tr>
+<td><strong>TRANSPORTATION</strong></td>
+<td>Ambulances, evacuation vehicles, fuel for transport, logistics coordination</td>
+<td>Evacuation speed, medical transport effectiveness, supply distribution reach, accessibility</td>
+<td>Temporal analysis: Transportation availability during acute phase vs recovery phase</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Relief Categories Extensibility</strong>: Although the application currently operates with 5 fixed relief categories, the architecture enables easy expansion for future needs without breaking existing code. Relief items are stored with (postId, category, keywords, confidence) in database, making new categories trivially addable:
+
+<ul>
+<li><strong>Database-level expansion</strong>: New categories can be added by inserting rows into relief_items table with new category values. Existing analysis queries dynamically discover categories via SELECT DISTINCT category - no hardcoded category lists in code.</li>
+<li><strong>Code-level expansion</strong>: For new analysis types (e.g., tracking EDUCATION or LIVELIHOOD aid), extend ReliefItem.Category enum and update PythonCategoryClassifier keywords. Analysis modules read categories dynamically from Model state - zero impact on existing CASH/MEDICAL/SHELTER/FOOD/TRANSPORTATION logic.</li>
+<li><strong>UI-level expansion</strong>: Analysis panel dropdowns populate from Model.getAvailableCategories() - automatically includes new categories without UI recompilation.</li>
+<li><strong>No schema redesign needed</strong>: relief_items table structure unchanged - simply add new (postId, category, keywords, confidence) rows for new aid types.</li>
+</ul>
+
+This extensibility follows the Open/Closed Principle - system open for extension (adding categories) but closed for modification (existing 5 categories work unchanged). Migration to PostgreSQL preserves this capability automatically.</p>
+
+<p><strong>Customization Capability - Adding New Disaster Types</strong>: The application architecture supports dynamic disaster type expansion without code modification. In DisasterManager (lines 1-50 of model/DisasterManager.java), the constructor initializes disasters:
+
+<pre><code class="language-java">public DisasterManager() {
+    // Initialize default disasters with aliases
+    addDisaster(new DisasterType("yagi", "台風,Yagi,tropical cyclone"));
+    addDisaster(new DisasterType("koto", "台風,Koto,typhoon storm"));
+    addDisaster(new DisasterType("bualo", "Bualoi,tropical storm"));
+    addDisaster(new DisasterType("matmo", "Matmo,typhoon,extreme weather"));
+    addDisaster(new DisasterType("fung-wong", "FUNG-WONG,Noru,typhoon"));
+    
+    // Future expansion: Simply add more disasters here, OR
+    // Load from external source: loadDisastersFromFile("disasters.dat");
+}
+</code></pre>
+
+To add new disaster types (e.g., earthquakes, floods): Add new lines in constructor OR modify disasters.dat file (Java serialized object containing DisasterType list). Data Persistence Manager loads disasters.dat on startup - changes take effect immediately without code recompilation.</p>
+
+
+
 <h3 id="data-collection">8.4 Data Collection and HTTP</h3>
 
 <p><strong>Java HttpClient (java.net.http, built-in since Java 11)</strong>: Modern HTTP protocol handler with connection pooling, automatic timeout management (default 30 seconds), follows HTTP redirects (301, 302), handles chunked transfer encoding, and supports HTTP/1.1 and HTTP/2.</p>
@@ -3931,24 +4198,39 @@ Registered in CrawlerRegistry alongside YouTubeCrawler - same interface, pluggab
 
 <h3 id="json-processing">8.5 JSON Processing</h3>
 
-<p><strong>Gson 2.10.1 (Google JSON Library)</strong>: Sophisticated JSON ↔ Java object serialization/deserialization. Automatically converts JSON strings to typed Java objects preserving nested structure (Post containing List&lt;Comment&gt; containing Sentiment objects). Handles custom types via type adapters (LocalDateTime → ISO-8601 strings).</p>
+<p><strong>JSON Handling Strategy</strong>: The application uses two JSON libraries optimized for different use cases. Understanding when to use each library improves code clarity and reduces dependencies:</p>
 
-<p><strong>Benefits:</strong> Type safety - <code>Gson.fromJson(jsonString, Post.class)</code> returns actual Post object with compile-time type checking, not generic Object requiring runtime casts and instanceof checks. Automatic null handling and optional field support. Recursive serialization (Post.comments automatically serializes all nested Comment objects). Used for Python API communication where response contains complex sentiment/keyword structures.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Library</strong></th>
+<th><strong>Use Case</strong></th>
+<th><strong>Example in Code</strong></th>
+<th><strong>Trade-off</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Gson 2.10.1 (Type-Safe)</strong></td>
+<td>Parse complex nested JSON into typed Java objects (Python API responses)</td>
+<td>SentimentResponse response = gson.fromJson(json, SentimentResponse.class);</td>
+<td>Full-featured but adds ~5MB to JAR</td>
+</tr>
+<tr>
+<td><strong>org.json 20231013 (Lightweight)</strong></td>
+<td>Parse simple JSON from HTML embedded data (YouTube ytInitialData)</td>
+<td>JSONObject obj = new JSONObject(jsonString); String title = obj.getString("title");</td>
+<td>Minimal (~100KB) but no type safety</td>
+</tr>
+</tbody>
+</table>
 
-<p><strong>org.json 20231013 (Lightweight JSON)</strong>: Minimal JSON parser providing JSONObject (maps key-value pairs), JSONArray (ordered lists). Simple string→object parsing without type conversion.</p>
+<p><strong>Gson 2.10.1 (Google JSON Library) - For Complex Structures</strong>:</p>
 
-<p><strong>Benefits:</strong> Lightweight (single JAR, zero transitive dependencies). Fast parsing for simple structures. Perfect for one-off JSON parsing (YouTube's embedded ytInitialData). Zero configuration required. Using org.json for simple parsing saves 5-10MB compared to adding Gson when only parsing once. Dual library approach: org.json for YouTube HTML parsing (simple), Gson for Python API responses (complex nested structures).</p>
+<p><strong>What it does</strong>: Converts JSON strings ↔ Java objects automatically with full type checking. When you have nested objects (Post → List of Comments → each Comment has Sentiment), Gson recursively deserializes the entire structure preserving type information.</p>
 
-<p><strong>API Communication Format (Java ↔ Python):</strong></p>
-
-<pre><code class="language-java">// Java sends to Python (sentiment_api.py port 5001):
-String jsonRequest = "{ \"text\": \"Relief supplies arrived!\", \"task_type\": \"sentiment\" }";
-HttpRequest request = HttpRequest.newBuilder()
-    .POST(HttpRequest.BodyPublishers.ofString(jsonRequest))
-    .build();
-HttpResponse&lt;String&gt; response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-// Python returns JSON:
+<p><strong>Code Example</strong>:
+<pre><code class="language-java">// Python API returns this JSON:
 {
   "sentiment": "POSITIVE",
   "confidence": 0.94,
@@ -3956,11 +4238,61 @@ HttpResponse&lt;String&gt; response = httpClient.send(request, HttpResponse.Body
   "keywords": ["relief", "supplies"]
 }
 
-// Java parses response:
+// Java defines matching class:
+class SentimentResponse {
+    String sentiment;
+    double confidence;
+    String category;
+    List&lt;String&gt; keywords;
+}
+
+// Gson instantly converts:
 Gson gson = new Gson();
 SentimentResponse response = gson.fromJson(jsonString, SentimentResponse.class);
-System.out.println(response.sentiment);  // Type-safe access, no casts
+
+// Type-safe access (compile-time checking):
+System.out.println(response.sentiment);  // ✓ Works, String type known
+System.out.println(response.confidence); // ✓ Works, double type known
+// response.invalid_field;  // ✗ Compile error - field doesn't exist
 </code></pre>
+</p>
+
+<p><strong>Benefits</strong>: Type safety prevents runtime errors. Nested objects (Post.comments automatically deserializes all Comment objects). Handles custom types via type adapters (LocalDateTime → ISO-8601 strings). Used for Python API communication where response structure is complex and changes require catching in compilation.</p>
+
+<p><strong>org.json 20231013 (Lightweight JSON) - For Simple Parsing</strong>:</p>
+
+<p><strong>What it does</strong>: Parses JSON into flexible generic objects (JSONObject, JSONArray) without class definitions. Trade runtime safety for minimal dependencies.</p>
+
+<p><strong>Code Example</strong>:
+<pre><code class="language-java">// YouTube HTML embeds JSON data:
+String html = "...&lt;script&gt;var ytInitialData = {\"videoDetails\": {\"videoId\": \"abc123\", ...}}&lt;/script&gt;...";
+
+// Extract and parse with org.json:
+String jsonStr = extractJsonFromHtml(html);  // "{\\"videoDetails\\": ...}"
+JSONObject data = new JSONObject(jsonStr);  // Parse instantly
+
+// Access values dynamically (no class needed):
+String videoId = data.getJSONObject("videoDetails").getString("videoId");
+int viewCount = data.getJSONObject("videoDetails").getInt("viewCount");
+
+// No type checking at compile time, but works for one-off parsing
+</code></pre>
+</p>
+
+<p><strong>Benefits</strong>: Lightweight - single JAR with zero transitive dependencies (~100KB vs Gson ~5MB). Fast parsing for simple structures. Perfect for YouTube HTML parsing where you extract just a few fields then discard. Zero configuration. Avoids bloating desktop app with unused type serialization code.</p>
+
+<p><strong>Why Both Libraries?</strong>:</p>
+
+<p><strong>Design Decision</strong>: Rather than forcing all JSON through Gson (simpler to maintain), the application strategically uses org.json for lightweight YouTube parsing and Gson for complex Python API communication. This dual-library approach:
+<ul>
+<li><strong>Reduces JAR size</strong>: YouTube crawler doesn't need Gson's full serialization machinery - org.json is 50x lighter</li>
+<li><strong>Improves clarity</strong>: Developers see "parsing simple data" (org.json) vs "complex typed response" (Gson) in code</li>
+<li><strong>Optimizes for use case</strong>: Avoid paying full Gson cost when simple parsing suffices</li>
+<li><strong>Zero overlap</strong>: Each library has distinct responsibility - no redundancy</li>
+</ul>
+</p>
+
+<p><strong>When Python API Needs Change</strong>: If Python sentiment_api.py returns additional nested fields (e.g., detailed per-phrase sentiment scores), Gson's automatic deserialization adapts by extending SentimentResponse class. org.json would require manual JSONObject navigation - type safety matters for complex APIs. This is why org.json unsuitable for Python communication.</p>
 
 <h3 id="machine-learning-nlp">8.6 Machine Learning &amp; NLP</h3>
 
@@ -4380,6 +4712,88 @@ registry.registerCrawler(new RedditCrawler());         // New
 </ul>
 Allows system to gracefully handle rate limits without crashing.</p>
 
+<p><strong>Disaster Types and Relief Categories - Customization and Expansion</strong>:</p>
+
+<p><strong>Current Configuration</strong>: The application currently operates with exactly 5 disaster types and 5 relief categories:
+<ul>
+<li><strong>Disaster Types (stored in disasters.dat)</strong>: yagi, koto, bualo, matmo, fung-wong</li>
+<li><strong>Relief Categories (stored in relief_items table)</strong>: CASH, MEDICAL, SHELTER, FOOD, TRANSPORTATION</li>
+</ul>
+These types are loaded during application startup from persistent storage:
+<ul>
+<li>DisasterManager.getInstance() reads from data/disasters.dat (Java serialized DisasterType objects)</li>
+<li>relief_items table schema defines acceptable category values in database</li>
+<li>Model instance caches loaded categories in memory for UI/Analysis access</li>
+</ul>
+</p>
+
+<p><strong>Persistence Architecture Enabling Easy Expansion</strong>: The application achieves flexibility through intermediate file storage and dynamic loading patterns:
+
+<ul>
+<li><strong>Disasters.dat File Strategy</strong>: Disaster types are persisted to data/disasters.dat using Java object serialization (NOT hardcoded in code). This file contains a serialized DisasterType list. On application startup, DataPersistenceManager.loadDisasters() deserializes disasters.dat and populates DisasterManager singleton with current disaster types. This separation means:
+  <ul>
+  <li>Adding new disasters = modify disasters.dat file (via programmatic API or direct serialization)</li>
+  <li>No code recompilation required - disasters.dat loaded fresh each startup</li>
+  <li>Users can clone/backup disasters.dat across machines - instant disaster type sharing</li>
+  <li>Example: Organization A has disaster set {yagi, koto, bualo}, Organization B adds {earthquake, flood} - separate disasters.dat files, zero code conflicts</li>
+  </ul>
+</li>
+
+<li><strong>Relief Categories Database Storage</strong>: Relief categories are defined in relief_items table schema. Similar to disasters:
+  <ul>
+  <li>Current: 5 categories fixed in enum and database</li>
+  <li>Expansion: Add new category rows to relief_items table + extend ReliefItem.Category enum</li>
+  <li>Dynamic UI discovery via Model.getAvailableCategories()</li>
+  </ul>
+</li>
+</ul>
+</p>
+
+<p><strong>Expansion Mechanism - Adding New Disaster Types</strong>: Thanks to disasters.dat persistence strategy, expanding disaster types is straightforward:
+
+<pre><code class="language-java">// At runtime, modify disasters.dat:
+DisasterManager manager = DisasterManager.getInstance();
+manager.addDisaster(new DisasterType("earthquake", "Earthquake,EQ,seismic,tremor"));
+manager.addDisaster(new DisasterType("flood", "Flood,flooding,water,inundation"));
+
+// Persist updated disasters list:
+DataPersistenceManager persistence = new DataPersistenceManager();
+persistence.saveDisasters(manager);  // Writes updated disasters.dat
+
+// Application restart automatically loads new disasters
+// Next startup: DisasterManager loads {yagi, koto, bualo, matmo, fung-wong, earthquake, flood}
+// UI dropdowns automatically include new disaster types - no code changes
+</code></pre>
+</p>
+
+<p><strong>Why This Architecture Enables Easy Expansion</strong>:
+<ul>
+<li><strong>Separation of Concerns</strong>: Data (disasters.dat, relief_items rows) separate from code (DisasterManager, ReliefItem). Changing data doesn't require code recompilation.</li>
+<li><strong>Lazy Loading Pattern</strong>: DisasterManager and relief categories loaded once at startup from persistent storage. If storage changes, next startup reflects changes automatically. No hot-reloading complexity.</li>
+<li><strong>Single Source of Truth</strong>: disasters.dat is the definitive source for disaster types. All references (UI dropdowns, Analysis tabs, Model cache) read from this single source via Singleton pattern.</li>
+<li><strong>No Breaking Changes</strong>: Existing 5 disaster types (yagi, koto, bualo, matmo, fung-wong) continue to work unchanged. New types add to the set without modifying existing hardcoded assumptions.</li>
+<li><strong>Migration Path Preserved</strong>: When migrating from SQLite to PostgreSQL, disasters.dat loading strategy unchanged - DisasterManager.getInstance() still works identically. Database schema change (SQLite → PostgreSQL) is transparent to disaster loading logic.</li>
+</ul>
+</p>
+
+<p><strong>Scalability Implications</strong>:
+<ul>
+<li><strong>Current (5 disaster types, 5 relief categories)</strong>: UI dropdowns load instantly, analysis completes in seconds</li>
+<li><strong>Expanded (50+ disaster types)</strong>: Still performant - DisasterManager caches loaded disasters in memory, database indexes on disasterId column. Relief categories remain fixed at 5 types for consistency.</li>
+<li><strong>Multi-tenant future</strong>: Each organization maintains separate disasters.dat file - OrganizationA.disasters.dat vs OrganizationB.disasters.dat with distinct disaster sets. Zero code conflict, zero deployment complexity.</li>
+</ul>
+</p>
+
+<p><strong>Migration and Backup Strategy</strong>: The disasters.dat file-based approach enables simple data portability:
+<ul>
+<li>Backup: Copy data/disasters.dat to safe location</li>
+<li>Restore: Copy disasters.dat back to data/ directory, restart application</li>
+<li>Share: Email disasters.dat to partner organization - they copy to their data/ folder, get identical disaster types instantly</li>
+<li>Version Control: disasters.dat can be committed to Git - disaster type evolution is auditable and rollbackable</li>
+<li>No SQL migration scripts needed - file-based persistence is simpler than database versioning for this use case</li>
+</ul>
+</p>
+
 <h3 id="technology-stack">8.10 Technology Stack Summary</h3>
 
 <table>
@@ -4461,7 +4875,7 @@ Allows system to gracefully handle rate limits without crashing.</p>
 </tbody>
 </table>
 
-<p><strong>Architecture Decisions</strong>: Lightweight HTTP-based data collection (no Selenium) for efficiency and reduced resource footprint. Microservices pattern: Java desktop app communicates with Python ML backend via REST (loose coupling, language independence). Abstraction layers (DataPersistenceManager, CrawlerRegistry) enable technology switching without breaking client code. Observer pattern ensures responsive UI without polling.</p>
+<p><strong>Architecture Decisions</strong>: Lightweight HTTP-based data collection for efficiency and reduced resource footprint. Microservices pattern: Java desktop app communicates with Python ML backend via REST (loose coupling, language independence). Abstraction layers (DataPersistenceManager, CrawlerRegistry) enable technology switching without breaking client code. Observer pattern ensures responsive UI without polling.</p>
 
 <p><strong>Production Readiness</strong>: Mature, battle-tested libraries (Swing since 1996, Flask since 2010, SQLite since 2000). Try-with-resources ensures resource cleanup. Prepared statements prevent SQL injection. Error handling with graceful fallbacks (Python unavailable → use Enhanced/Simple analyzers). Future evolution supported via abstraction patterns without major refactoring.</p>
 </body>
